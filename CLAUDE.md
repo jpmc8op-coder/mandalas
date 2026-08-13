@@ -693,6 +693,22 @@ encima del papel desaparecen, que es lo que corresponde en una lámina virgen.
 rellenos no se guardan y al pintar se sale del modo. Ese modo es para imprimir
 la lámina; este es para pintarla en pantalla.
 
+**El fondo también se pinta.** El rectángulo de fondo se emite con
+`class="parte" data-i="-1"`, así que el mismo toque que pinta una figura lo
+pinta a él (`estado.fondoColor`). Es lo que permite colorear los espacios en
+blanco entre figuras. **Ojo: es UNA sola región** — los huecos de un mandala se
+comunican entre sí, así que se pintan todos a la vez; pintar hueco por hueco
+exigiría rasterizar el dibujo y hacer un relleno por inundación, que es otro
+problema. Las figuras conservan el color del papel aunque el fondo esté
+pintado: en una lámina, pintar alrededor no tiñe lo que aún no se coloreó.
+Elegir un fondo en la pestaña Ver, `Auto-colorear`, `Pintar desde cero` y
+`Página para colorear` lo borran — si no, se tocaba "Negro" y no pasaba nada.
+
+**Pintar en modo línea cae en la lámina en blanco, no en el coloreado
+automático.** Antes, dar el primer color en la página para colorear sacaba del
+modo línea y aparecían de golpe todos los demás colores, como si la app hubiera
+pintado sola el resto. Justo lo contrario de lo que uno espera coloreando.
+
 Tres reglas que salieron de usarlo:
 
 - **Queda activado.** Los mandalas que se generen después también nacen sin
@@ -835,10 +851,15 @@ probabilidad de banda vacía **baja** con el Detalle, que es lo que más se nota
   válido.
 - Export PNG correcto en los siete estilos, incluidos los que usan `evenodd`
   (pads, tuercas) y `tr` (siluetas, rosetas).
-- Lámina en blanco: 2100 combinaciones (los 1050 de siempre × modo normal y en
-  blanco) producen SVG válido; pintar, deshacer y rehacer funcionan figura a
-  figura; cambiar de paleta no borra lo pintado; el mandala siguiente nace en
-  blanco.
+- Lámina en blanco: 2100 combinaciones (estilo × vista × fondo × acabado ×
+  modo línea × fondo pintado) producen SVG válido; pintar, deshacer y rehacer
+  funcionan figura a figura; cambiar de paleta no borra lo pintado; el mandala
+  siguiente nace en blanco.
+- Pintar sobre la página para colorear deja el resto de figuras en el color del
+  papel (comprobado pieza por pieza), no las colorea todas.
+- El fondo pintado se toca de verdad: `elementFromPoint` sobre un hueco devuelve
+  el rect `data-i="-1"`, y la exportación a PNG sale con ese color (píxel de la
+  esquina medido: exactamente el elegido).
 - Persistencia comprobada en los tres casos: reabrir sin semilla en la URL
   restaura estilo, ajustes, fondo, acabado, modo y los colores figura por
   figura (804 bytes guardados); abrir un enlace con otra semilla muestra ese

@@ -15,7 +15,8 @@ sin conexión y sin instalar nada.
 - **Coloreado por capas:** un toque pinta la figura tocada y todas sus hermanas.
   28 paletas, y tres acabados: plano, acuarela y lápiz de color.
 - **Pintar desde cero:** la mandala aparece en blanco, solo con los contornos, y
-  se va pintando figura por figura con los colores que uno elija.
+  se va pintando figura por figura —y el fondo también— con los colores que uno
+  elija. Lo que se está pintando se guarda solo y sigue ahí al volver a abrir.
 - **Modo solo líneas:** la lámina lista para imprimir y colorear a mano.
 - **Vista previa sobre objetos:** camiseta, bolsa, taza y pared.
 - **Exporta a PNG y a SVG.** El SVG es vectorial de verdad: sirve para corte,
