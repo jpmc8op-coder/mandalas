@@ -123,6 +123,24 @@
   }
 
   .titulo{font-size:11px;color:var(--txt-2);text-transform:uppercase;letter-spacing:.07em;margin:0 0 7px}
+  .pista{font-size:11px;color:var(--txt-2);line-height:1.45;margin:8px 0 0}
+
+  /* Galería: miniaturas generadas en el momento a partir de la semilla, no
+     imágenes guardadas. Cada una pesa menos de 1 KB en localStorage. */
+  .gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(74px,1fr));gap:7px;margin-top:9px}
+  .gal:empty{display:none}
+  .gal figure{
+    margin:0;position:relative;border-radius:10px;overflow:hidden;cursor:pointer;
+    border:2px solid var(--linea);background:#fff;aspect-ratio:1;
+  }
+  .gal figure:hover{border-color:var(--acento)}
+  .gal svg{width:100%;height:100%;display:block}
+  /* Discreta: la acción principal de una miniatura es abrirla, no borrarla. */
+  .gal .x{
+    position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;
+    border:0;background:#0007;color:#fff;font-size:10px;line-height:1;cursor:pointer;
+    display:grid;place-items:center;
+  }
 
   /* filas de opciones */
   /* Las filas que sí se deslizan llevan un degradado en el borde derecho para
@@ -298,6 +316,12 @@
       <button class="btn sec" id="bPNG">Guardar PNG</button>
       <button class="btn sec" id="bSVG">Guardar SVG</button>
     </div>
+
+    <p class="titulo" style="margin-top:16px">Mis mandalas</p>
+    <button class="btn sec" id="bGuardar">Guardar esta en mi galería</button>
+    <div class="gal" id="galeria"></div>
+    <p class="pista" id="galVacia">Lo que estás pintando se guarda solo. Guardá aquí las
+      que quieras conservar antes de generar otra.</p>
   </div>
 
   <!-- ---------------- COLOR ---------------- -->
@@ -3163,6 +3187,25 @@ function guardarActual(){
   try { localStorage.setItem(GUARDADO, instantanea()); } catch {}
 }
 
+/* --- Galería ---------------------------------------------------------------
+   El guardado automático conserva UNA sola mandala: la que se está pintando.
+   Generar otra la reemplaza, que para una app de colorear es perder el trabajo.
+   La galería guarda las que uno quiera conservar, con el mismo formato: la
+   receta, no la imagen. Treinta entradas son unos 25 KB.                     */
+const GALERIA = 'mandalas.galeria', GAL_MAX = 30;
+function galeria(){
+  try { const l = JSON.parse(localStorage.getItem(GALERIA) || '[]'); return Array.isArray(l) ? l : []; }
+  catch { return []; }
+}
+function escribirGaleria(lista){
+  // Si no cabe, se sueltan las más viejas en vez de fallar en silencio.
+  for (let i = 0; i < 4; i++){
+    try { localStorage.setItem(GALERIA, JSON.stringify(lista)); return true; }
+    catch { lista = lista.slice(0, Math.max(1, Math.floor(lista.length / 2))); }
+  }
+  return false;
+}
+
 // `guardar:false` para el arranque cuando se abre el enlace compartido de otra
 // persona: mirar un mandala ajeno no puede borrar el que uno tenía a medio
 // pintar. En cuanto se toca algo, se guarda — ahí sí se cambió de trabajo.
@@ -3961,6 +4004,64 @@ function dibujarCapas(){
   });
 }
 
+/* --- miniaturas de la galería ---
+   Se dibujan generando la mandala de nuevo a partir de su semilla, no guardando
+   imágenes. Se fuerzan tres cosas para la miniatura: vista plana (una taza de
+   74 px no se entiende), acabado plano (treinta filtros de acuarela cuestan
+   carísimo) y el lienzo de 1000 (medir el ajustado exige tenerla en pantalla).
+   El estado global se presta y se devuelve tal cual estaba. */
+function miniatura(snap){
+  const previo = instantanea(), pMandala = mandala, pLienzo = LIENZO_M;
+  let svg = '';
+  try {
+    const o = JSON.parse(snap);
+    estado.semilla = o.s; estado.cfg = o.c; estado.paleta = o.p; estado.colores = o.k || [];
+    estado.fondo = o.f; estado.vista = 'plano'; estado.lineas = !!o.l;
+    estado.trazos = o.t || 'tinta'; estado.acabado = 'plano';
+    estado.enBlanco = !!o.b; estado.fondoColor = o.g || null;
+    LIENZO_M = VB / 2;
+    mandala = generar(estado.semilla, estado.cfg);
+    if (estado.colores.length !== mandala.partes.length) colorearInicial();
+    svg = svgMarkup();
+  } catch { svg = ''; }
+  const r = JSON.parse(previo);
+  estado.semilla = r.s; estado.cfg = r.c; estado.paleta = r.p; estado.colores = r.k;
+  estado.fondo = r.f; estado.vista = r.v; estado.lineas = r.l; estado.trazos = r.t;
+  estado.acabado = r.a; estado.enBlanco = !!r.b; estado.fondoColor = r.g || null;
+  mandala = pMandala; LIENZO_M = pLienzo;
+  return svg;
+}
+
+function dibujarGaleria(){
+  const cont = $('galeria'), lista = galeria();
+  cont.innerHTML = '';
+  $('galVacia').style.display = lista.length ? 'none' : 'block';
+  lista.forEach((snap, i) => {
+    const f = document.createElement('figure');
+    f.innerHTML = miniatura(snap);
+    f.title = 'Abrir esta mandala';
+    f.onclick = () => { aplicarSnap(snap); empujar(); avisar('Mandala abierta'); };
+    const x = document.createElement('button');
+    x.className = 'x'; x.textContent = '✕'; x.title = 'Quitar de la galería';
+    x.onclick = e => {
+      e.stopPropagation();                       // si no, también la abriría
+      if (!confirm('¿Quitar esta mandala de tu galería?')) return;
+      const l = galeria(); l.splice(i, 1); escribirGaleria(l); dibujarGaleria();
+    };
+    f.appendChild(x);
+    cont.appendChild(f);
+  });
+}
+
+$('bGuardar').onclick = () => {
+  const snap = instantanea(), lista = galeria();
+  if (lista.includes(snap)){ avisar('Esa ya está en tu galería'); return; }
+  lista.unshift(snap);
+  if (!escribirGaleria(lista.slice(0, GAL_MAX))){ avisar('No hay espacio para guardar'); return; }
+  dibujarGaleria();
+  avisar('Guardada en tu galería');
+};
+
 function aplicarColor(i){
   // Pintar estando en "solo líneas" guardaba el color sin mostrar nada: la app
   // parecía rota. Si el usuario pinta, es que quiere ver color — se sale del
@@ -4176,6 +4277,10 @@ $('bSVG').onclick = () => entregar(svgBlob(), `mandala-${estado.semilla}.svg`);
   }
   botonesZoom();
   empujar(restaurado);
+  // La galería se dibuja después del primer pintado: con el tope de 30 cuesta
+  // ~120 ms, y eso retrasaría la aparición de la mandala, que es lo que el
+  // usuario está esperando ver.
+  setTimeout(dibujarGaleria, 0);
 
   // Service worker: la app abre sin internet. Solo funciona servida por HTTPS
   // (o localhost); con file:// el registro falla y no pasa nada — la app anda

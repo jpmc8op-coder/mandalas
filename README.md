@@ -17,6 +17,8 @@ sin conexión y sin instalar nada.
 - **Pintar desde cero:** la mandala aparece en blanco, solo con los contornos, y
   se va pintando figura por figura —y el fondo también— con los colores que uno
   elija. Lo que se está pintando se guarda solo y sigue ahí al volver a abrir.
+- **Galería:** hasta 30 mandalas guardadas en el propio dispositivo. Se guarda la
+  receta (semilla y colores), no la imagen: las 30 ocupan 16 KB.
 - **Modo solo líneas:** la lámina lista para imprimir y colorear a mano.
 - **Vista previa sobre objetos:** camiseta, bolsa, taza y pared.
 - **Exporta a PNG y a SVG.** El SVG es vectorial de verdad: sirve para corte,

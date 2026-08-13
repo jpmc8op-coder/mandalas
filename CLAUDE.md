@@ -687,6 +687,27 @@ escena de 410 px de alto contra 375 de ancho). Sirve para ver el dibujo entero
 sin estorbo y para cuando se está con zoom. Lo que sí lo agranda es el lienzo
 ajustado de arriba y bajar el relleno lateral de `#escena` a 3 px.
 
+### Galería (`mandalas.galeria`)
+
+El guardado automático conserva **una sola** mandala: la que se está pintando.
+Generar otra la reemplaza, que en una app de colorear es perder el trabajo. La
+galería guarda hasta 30, con el mismo formato de siempre —la receta, no la
+imagen—: 30 entradas son unos 16 KB.
+
+**Las miniaturas se generan de nuevo desde la semilla, no se guardan como
+imágenes.** `miniatura(snap)` presta el estado global, dibuja y lo devuelve tal
+cual estaba (comprobado: instantánea, `LIENZO_M` y `mandala` idénticos después).
+Fuerza tres cosas: vista plana (una taza de 74 px no se entiende), acabado plano
+(treinta filtros de acuarela cuestan carísimo) y el lienzo de 1000, porque medir
+el ajustado exige tener el dibujo en pantalla.
+
+Dibujar las 30 cuesta ~120 ms, así que en el arranque va en un `setTimeout(…, 0)`
+**después** del primer pintado: lo que el usuario espera ver es su mandala, no la
+galería.
+
+`escribirGaleria()` no falla en silencio si `localStorage` está lleno: suelta la
+mitad más vieja y reintenta, hasta cuatro veces.
+
 ### Lo que se está pintando sobrevive a cerrar la app
 
 `localStorage['mandalas.actual']` guarda **la misma instantánea que usa el
@@ -908,6 +929,10 @@ probabilidad de banda vacía **baja** con el Detalle, que es lo que más se nota
   Datos corruptos y guardados de una versión anterior con menos colores caen
   ambos en el camino seguro.
 - Ida y vuelta por `instantanea()` / `aplicarSnap()` idéntica en los 7 estilos.
+- Galería: guardar, no duplicar la misma, abrir (restaura la instantánea exacta
+  y deja `LIENZO_M` recalculado), borrar, y el tope de 30. Con 30 guardadas son
+  15.9 KB y dibujarlas cuesta 118 ms. Dibujar miniaturas deja el estado global
+  intacto: instantánea, lienzo y mandala idénticos antes y después.
 
 ## Camino a publicación
 
@@ -969,9 +994,7 @@ webview), `navigator.share` con respaldo a descarga, y `esPro()` en la sección 
 como único punto donde se decide qué está bloqueado.
 
 ## Pendiente
-- [ ] Galería local con `localStorage` guardando solo estilo + semilla + paleta
-      + colores manuales (un proyecto guardado debe pesar menos de 1 KB, nunca
-      imágenes).
+- [x] ~~Galería local con `localStorage`~~ — hecha: 30 entradas de ~530 bytes.
 - [ ] Animación de construcción (los anillos aparecen de dentro hacia afuera).
 - [ ] Empaquetar con Capacitor. Android primero: cuenta de desarrollador
       USD 25 pago único vs USD 99/año de Apple.
