@@ -934,16 +934,28 @@ no bastan con SVG); metas de `apple-mobile-web-app-*`; `.gitignore` y `README`.
 
 **El icono se decidió mirándolo a 48 px, no a 512.** El primero era azul noche
 con tres anillos, ocho pétalos y doce puntos: a tamaño de escritorio se veía
-bien, pero en la pantalla del teléfono era una mancha oscura con ruido. El de
-ahora tiene tres elementos y tres colores —seis pétalos rosa, seis puntos
-turquesa y el centro amarillo, sobre crudo— y es el que sigue leyéndose chico.
-La comparación se hace con una hoja que muestra los candidatos a 190, 96 y 48 px,
-esta última sobre fondo oscuro, que es como se ve en un escritorio de Android.
+bien, pero en la pantalla del teléfono era una mancha oscura con ruido. La
+comparación se hace con una hoja que muestra los candidatos a 180 y a 48 px,
+esta última sobre escritorio oscuro **y claro**, que es como se ven de verdad.
+
+El actual: fondo azul noche, cuatro pétalos coral, cuatro rayos ámbar
+intercalados, ocho puntos turquesa y el centro crudo con punto coral. Cuatro
+colores y tres formas.
+
+**Dos criterios que salieron de descartar candidatos:**
+
+1. **Mezclar formas redondas y angulares** (pétalos + rayos) quita la lectura
+   "flor" sin caer en "engranaje". Una app que hace mandalas hindúes, africanos,
+   de circuitos y de mecha no puede anunciarse solo con una flor rosa.
+2. **Los elementos pequeños hay que agrandarlos para el tamaño real.** La
+   primera versión de este icono tenía los puntos a radio 19 y el centro a 50, y
+   a 48 px se emborronaban; subidos a 24 y 54 el dibujo aguanta. Lo que a 512
+   parece equilibrado, a 48 se empasta.
 
 > **Zona segura del recorte circular:** Android recorta el icono `maskable` a un
-> círculo del 80% del lado, o sea radio 205 de 256. La primera versión de este
-> icono llegaba a 206 y le habría cortado las puntas a los pétalos; se bajó a
-> 194.
+> círculo del 80% del lado, o sea radio 205 de 256. Una versión llegaba a 206 y
+> le habría cortado las puntas a los pétalos. Hoy: rayos 194, pétalos 190,
+> puntos 152.
 
 **Fase 1.** Repo público `mandalas` en GitHub → `git remote add origin` →
 `git push -u origin main` → Settings ▸ Pages ▸ Deploy from branch `main` / root.

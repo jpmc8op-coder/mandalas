@@ -2,6 +2,8 @@
 _capturas/
 _hoja.html
 _icono.html
+_iconos.html
+ic/
 *.bak
 
 # Empaquetado nativo (Capacitor), cuando llegue
