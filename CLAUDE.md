@@ -653,6 +653,33 @@ entrar en esa guarda.
   colorear) que sobre negro u oro (previsualización de estampado).
 - **Sin librerías, sin red, sin fuentes remotas.** Funciona offline.
 
+### Lámina en blanco: pintar desde cero
+
+`estado.enBlanco` + `vaciarColores()`. La mandala nace como una lámina recién
+impresa —papel y contornos de tinta— y se pinta figura por figura.
+
+**No hay un modo de dibujo nuevo, y ese es todo el truco:** basta con que TODOS
+los rellenos valgan el color del papel (`opaco(colorFondo())`) y los contornos
+la tinta que contrasta (`tinta()`). Pintar tocando, deshacer, las capas, los
+acabados, las maquetas y la exportación siguen funcionando sin una sola rama
+especial. Las sombras cel se pintan del color del papel: con `opacity 0.28`
+encima del papel desaparecen, que es lo que corresponde en una lámina virgen.
+
+**El modo "solo líneas" NO sirve para esto**, aunque se parezca: ahí los
+rellenos no se guardan y al pintar se sale del modo. Ese modo es para imprimir
+la lámina; este es para pintarla en pantalla.
+
+Tres reglas que salieron de usarlo:
+
+- **Queda activado.** Los mandalas que se generen después también nacen sin
+  pintar (`colorearInicial()` es el único punto que decide). Quien entra a
+  pintar quiere pintar varios, no volver a pedirlo cada vez.
+- **Elegir paleta no repinta nada** estando en blanco: solo cambia los colores
+  disponibles. Repintar borraría lo que la persona lleva hecho.
+- **El selector de Contornos tampoco aplica**, por lo mismo.
+
+`Auto-colorear` apaga el modo y devuelve el coloreado por paleta.
+
 ### El selector de color es propio, no el del sistema
 
 Era un `<input type="color">`. En el escritorio abre una paleta cómoda, pero

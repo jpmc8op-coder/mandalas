@@ -107,6 +107,7 @@
     background:var(--acento);color:#1a1206;font-size:15px;font-weight:700;
   }
   .btn.sec{background:var(--panel);color:var(--txt);border:1px solid var(--linea);font-weight:600}
+  .btn.sec.on{border-color:var(--acento);background:#2c3446}
   .duo{display:flex;gap:8px}
 
   .semilla{display:flex;gap:8px;align-items:center;margin-bottom:11px}
@@ -317,7 +318,10 @@
     <p class="titulo">Capas · toca para pintar</p>
     <div class="ops" id="capas"></div>
 
-    <button class="btn" id="bAuto">Auto-colorear</button>
+    <div class="duo">
+      <button class="btn sec" id="bBlanco">Pintar desde cero</button>
+      <button class="btn" id="bAuto">Auto-colorear</button>
+    </div>
   </div>
 
   <!-- ---------------- VER ---------------- -->
@@ -3129,7 +3133,8 @@ const estado = {
   vista: 'plano',
   lineas: false,
   trazos: 'tinta',     // color de los contornos: tinta | varios | claro
-  acabado: 'plano'     // textura del color: plano | acuarela | lapiz
+  acabado: 'plano',    // textura del color: plano | acuarela | lapiz
+  enBlanco: false      // la mandala nace sin pintar, para colorearla a mano
 };
 let mandala = null;
 let colorActivo = PALETAS[0].c[2];
@@ -3139,7 +3144,7 @@ const historial = []; let hPtr = -1;
 function instantanea(){
   return JSON.stringify({ s:estado.semilla, c:estado.cfg, p:estado.paleta, k:estado.colores,
                           f:estado.fondo, v:estado.vista, l:estado.lineas, t:estado.trazos,
-                          a:estado.acabado });
+                          a:estado.acabado, b:estado.enBlanco });
 }
 function empujar(){
   const snap = instantanea();
@@ -3156,6 +3161,7 @@ function aplicarSnap(snap){
   estado.colores = o.k; estado.fondo = o.f; estado.vista = o.v; estado.lineas = o.l;
   estado.trazos = o.t || 'tinta';
   estado.acabado = o.a || 'plano';
+  estado.enBlanco = !!o.b;
   mandala = generar(estado.semilla, estado.cfg);
   sincronizarControles();
   pintar(false);
@@ -3280,6 +3286,22 @@ function tinta(){
   const r = parseInt(h.slice(0,2),16), g = parseInt(h.slice(2,4),16), b = parseInt(h.slice(4,6),16);
   return (0.2126*r + 0.7152*g + 0.0722*b) > 140 ? '#111111' : '#ffffff';
 }
+/* Lienzo en blanco: la mandala queda como una lámina recién impresa —papel y
+   contornos de tinta— y el usuario la pinta figura por figura.
+
+   No hace falta un modo de dibujo aparte: basta con que TODOS los rellenos
+   valgan el color del papel. Así el resto de la app (pintar tocando, deshacer,
+   capas, acabados, exportar, maquetas) sigue funcionando igual, sin una sola
+   rama especial. El modo "solo líneas" no sirve para esto: ahí los rellenos no
+   se guardan y al pintar se sale del modo — es para imprimir, no para pintar
+   en pantalla. */
+function vaciarColores(){
+  const papel = opaco(colorFondo()), t = tinta();
+  // Las sombras cel se pintan del color del papel: con opacidad 0.28 encima del
+  // papel desaparecen, que es lo que corresponde en una lámina sin colorear.
+  estado.colores = mandala.partes.map(p => p.sombra ? papel : (p.trazo ? t : papel));
+}
+
 function autoColorear(){
   const pal = PALETAS[estado.paleta].c;
   const n = pal.length - 2;
@@ -3293,6 +3315,11 @@ function autoColorear(){
     if (estado.trazos === 'claro')  return pal[n];   // el acento de la paleta
     return pal[0];
   });
+}
+// Con qué colores nace un mandala recién generado. Es el único punto que
+// decide entre lámina en blanco y coloreado automático.
+function colorearInicial(){
+  if (estado.enBlanco) vaciarColores(); else autoColorear();
 }
 
 /* =========================================================================
@@ -3573,6 +3600,7 @@ function sincronizarControles(){
   marcar('#acabados', 'acabado', estado.acabado);
   marcar('#modoLineas', 'lineas', estado.lineas ? '1' : '0');
   $('bLineas').classList.toggle('on', estado.lineas);
+  marcarBlanco();
   document.querySelectorAll('.paleta').forEach((p, i) => p.classList.toggle('on', i === estado.paleta));
   document.querySelectorAll('.muestraFondo').forEach(m => m.classList.toggle('on', m.dataset.fondo === estado.fondo));
   dibujarSwatches();
@@ -3581,7 +3609,7 @@ function sincronizarControles(){
 function regenerar(nuevaSemilla){
   if (nuevaSemilla !== undefined) estado.semilla = nuevaSemilla;
   mandala = generar(estado.semilla, estado.cfg);
-  autoColorear();
+  colorearInicial();
   pintar(nuevaSemilla !== undefined);
 }
 
@@ -3617,12 +3645,32 @@ $('bCopiar').onclick = async () => {
   catch { avisar('Semilla: ' + estado.semilla); }
 };
 
-$('bAuto').onclick = () => { autoColorear(); pintar(false); empujar(); };
+$('bAuto').onclick = () => {
+  estado.enBlanco = false;
+  autoColorear(); pintar(false); marcarBlanco(); empujar();
+};
+
+// Lámina en blanco para colorear a mano. Queda activado: los mandalas que se
+// generen después también nacen sin pintar, porque quien entra a pintar quiere
+// pintar varios, no pedirlo de nuevo cada vez.
+$('bBlanco').onclick = () => {
+  if (estado.lineas) ponerLineas(false);   // en modo línea no se puede pintar
+  estado.enBlanco = true;
+  vaciarColores(); pintar(true); marcarBlanco(); empujar();
+  avisar('Lámina en blanco: toca cada figura para pintarla');
+};
+function marcarBlanco(){
+  $('bBlanco').classList.toggle('on', estado.enBlanco);
+  $('bBlanco').textContent = estado.enBlanco ? 'Borrar y empezar' : 'Pintar desde cero';
+}
 
 document.querySelectorAll('#trazos button').forEach(b => b.onclick = () => {
   estado.trazos = b.dataset.trazos;
   marcar('#trazos', 'trazos', estado.trazos);
-  autoColorear(); pintar(false); empujar();
+  // En lámina en blanco los contornos son tinta sobre papel y este selector no
+  // aplica: recolorear borraría lo que la persona lleva pintado.
+  if (!estado.enBlanco) autoColorear();
+  pintar(false); empujar();
 });
 
 document.querySelectorAll('#acabados button').forEach(b => b.onclick = () => {
@@ -3639,7 +3687,10 @@ PALETAS.forEach((p, i) => {
   el.innerHTML = p.c.map(c => `<i style="background:${c}"></i>`).join('');
   el.onclick = () => {
     if (i >= limites().paletas){ avisar('Paleta Pro'); return; }
-    estado.paleta = i; autoColorear(); colorActivo = p.c[2];
+    // En lámina en blanco, elegir paleta solo cambia los colores disponibles
+    // para pintar; no repinta la mandala ni borra lo que ya lleva hecho.
+    estado.paleta = i; if (!estado.enBlanco) autoColorear();
+    colorActivo = p.c[2];
     sincronizarControles(); pintar(false); empujar();
   };
   $('paletas').appendChild(el);
@@ -4001,7 +4052,7 @@ $('bSVG').onclick = () => entregar(svgBlob(), `mandala-${estado.semilla}.svg`);
   const q = parseInt(new URLSearchParams(location.search).get('seed') || '', 10);
   estado.semilla = isNaN(q) ? Math.floor(Math.random() * 1e9) : q;
   mandala = generar(estado.semilla, estado.cfg);
-  autoColorear();
+  colorearInicial();
   sincronizarControles();
   pintar(true);
   botonesZoom();
