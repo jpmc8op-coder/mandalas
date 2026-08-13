@@ -157,7 +157,7 @@
      swatches de la paleta y se lea como "cualquier otro color". */
   #pickerWrap{
     position:relative;width:48px;height:48px;border-radius:50%;flex:0 0 auto;cursor:pointer;
-    display:grid;place-items:center;margin-left:2px;
+    display:grid;place-items:center;margin-left:2px;border:0;padding:0;
     background:conic-gradient(from 0deg,#ff3b30,#ff9500,#ffcc00,#34c759,#00c7be,
                               #0a84ff,#5e5ce6,#bf5af2,#ff2d55,#ff3b30);
     box-shadow:0 2px 10px #0007;
@@ -168,10 +168,6 @@
     width:30px;height:30px;border-radius:50%;display:grid;place-items:center;
     border:2px solid #fff;font-style:normal;font-size:17px;line-height:1;font-weight:700;
     color:#fff;text-shadow:0 1px 3px #000c;
-  }
-  #pickerWrap input{
-    position:absolute;inset:0;width:100%;height:100%;opacity:0;
-    border:0;padding:0;cursor:pointer;
   }
 
   .capa{flex:0 0 auto;width:34px;height:34px;border-radius:9px;border:2px solid var(--linea);cursor:pointer;position:relative}
@@ -187,6 +183,42 @@
     background:#000a;color:#fff;font-weight:600;letter-spacing:.02em;
   }
 
+  /* ---------- Selector de color propio ----------
+     Todo con objetivos grandes: los chips son de 44px, que es el mínimo que se
+     acierta con el dedo sin apuntar. */
+  #colorSheet{position:fixed;inset:0;z-index:60}
+  #colorSheet[hidden]{display:none}
+  .cs-fondo{position:absolute;inset:0;background:#000a}
+  .cs-caja{
+    position:absolute;left:0;right:0;bottom:0;background:var(--panel-2);
+    border-radius:18px 18px 0 0;padding:14px 14px calc(var(--sa-b) + 16px);
+    max-height:86vh;overflow-y:auto;animation:sube .18s ease-out;
+  }
+  @keyframes sube{from{transform:translateY(16px);opacity:0}to{transform:none;opacity:1}}
+  .cs-cab{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+  .cs-muestra{width:42px;height:42px;border-radius:12px;border:2px solid #fff3;flex:0 0 auto}
+  .cs-hex{font-size:15px;font-weight:700;letter-spacing:.04em;font-variant-numeric:tabular-nums}
+  .cs-x{
+    margin-left:auto;width:38px;height:38px;border-radius:50%;border:1px solid var(--linea);
+    background:var(--panel);color:var(--txt);font-size:15px;cursor:pointer;
+  }
+  .cs-rejilla{display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:7px;margin-bottom:14px}
+  .cs-rejilla b{height:44px;border-radius:10px;cursor:pointer;border:2px solid transparent;display:block}
+  .cs-rejilla b.on{border-color:#fff;box-shadow:0 0 0 2px var(--acento)}
+  .cs-rec{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px}
+  .cs-rec b{width:38px;height:38px;border-radius:50%;cursor:pointer;border:2px solid #fff3;display:block}
+  .cs-rec:empty{display:none}
+  /* El botón queda pegado abajo dentro de la hoja: con la rejilla y los tres
+     deslizadores, en un teléfono se iba fuera de la pantalla. */
+  #csUsar{position:sticky;bottom:0;margin-top:4px;box-shadow:0 -10px 12px var(--panel-2)}
+  /* Los deslizadores llevan su propio degradado: el tono se elige mirando, no
+     leyendo un número. */
+  input[type=range].slcolor{background-size:100% 6px;background-position:center;background-repeat:no-repeat;border-radius:3px}
+  input[type=range].slcolor::-webkit-slider-runnable-track{background:transparent}
+  input[type=range].slcolor::-moz-range-track{background:transparent}
+  input[type=range].slcolor::-webkit-slider-thumb{border:2px solid #fff;box-shadow:0 1px 4px #0008}
+  input[type=range].slcolor::-moz-range-thumb{border:2px solid #fff}
+
   #aviso{
     position:fixed;left:50%;bottom:calc(var(--sa-b) + 16px);transform:translate(-50%,20px);
     background:#000d;color:#fff;padding:10px 16px;border-radius:999px;font-size:13px;
@@ -201,6 +233,9 @@
     #panel{width:330px;flex:0 0 330px;border-top:0;border-left:1px solid var(--linea);overflow-y:auto;padding-top:var(--sa-t)}
     #tabs{padding:14px 12px 0}
     .hoja{background:transparent;max-height:none;overflow:visible}
+    /* En escritorio no tiene sentido una hoja pegada al borde inferior de una
+       pantalla ancha: se ancla al panel, del lado donde está el botón. */
+    .cs-caja{left:auto;right:24px;bottom:24px;width:340px;border-radius:16px;padding-bottom:16px}
   }
 </style>
 </head>
@@ -309,6 +344,27 @@
 </div>
 
 <div id="aviso"></div>
+
+<!-- Selector de color propio. Antes esto era un <input type="color">, que
+     delega en el selector del sistema: en el escritorio es una paleta cómoda,
+     pero en Android abre un diálogo distinto y torpe, y en iPhone otro. Un
+     selector propio se ve y se usa igual en los tres. -->
+<div id="colorSheet" hidden>
+  <div class="cs-fondo"></div>
+  <div class="cs-caja">
+    <div class="cs-cab">
+      <span class="cs-muestra" id="csMuestra"></span>
+      <span class="cs-hex" id="csHex">#000000</span>
+      <button class="cs-x" id="csCerrar" aria-label="Cerrar">✕</button>
+    </div>
+    <div id="csRecientes" class="cs-rec"></div>
+    <div id="csTonos" class="cs-rejilla"></div>
+    <div class="fila"><label>Tono</label><input type="range" id="csH" min="0" max="360" class="slcolor"></div>
+    <div class="fila"><label>Intensidad</label><input type="range" id="csS" min="0" max="100" class="slcolor"></div>
+    <div class="fila"><label>Brillo</label><input type="range" id="csL" min="0" max="100" class="slcolor"></div>
+    <button class="btn" id="csUsar">Usar este color</button>
+  </div>
+</div>
 
 <script>
 /* =========================================================================
@@ -3637,19 +3693,123 @@ function dibujarSwatches(){
     b.onclick = () => { colorActivo = c; dibujarSwatches(); };
     cont.appendChild(b);
   });
-  const wrap = document.createElement('label');
+  const wrap = document.createElement('button');
   wrap.id = 'pickerWrap';
   wrap.title = 'Elegir cualquier color';
   const nucleo = document.createElement('i');
   nucleo.style.background = colorActivo;
   nucleo.textContent = '+';
-  const pk = document.createElement('input');
-  pk.type = 'color'; pk.value = colorActivo;
-  pk.oninput = () => { colorActivo = pk.value; nucleo.style.background = colorActivo;
-                       document.querySelectorAll('.sw').forEach(s => s.classList.remove('on')); };
-  wrap.appendChild(nucleo); wrap.appendChild(pk);
+  wrap.appendChild(nucleo);
+  wrap.onclick = abrirColor;
   cont.appendChild(wrap);
 }
+
+/* --- Selector de color propio ---------------------------------------------
+   Reemplaza a `<input type="color">`. Ese input delega en el selector del
+   sistema operativo: en el escritorio abre una paleta cómoda, pero en Android
+   abre un diálogo tosco y en iPhone otro distinto, así que la misma app se
+   usaba de tres maneras y en el celular era la peor. Aquí se elige de dos
+   formas, las dos pensadas para el dedo: tocando un tono de la rejilla, o
+   moviendo tres deslizadores (tono, intensidad, brillo).                    */
+function hslHex(h, s, l){
+  s /= 100; l /= 100;
+  const k = n => (n + h / 30) % 12;
+  const a = s * Math.min(l, 1 - l);
+  const f = n => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+  const c = n => Math.round(f(n) * 255).toString(16).padStart(2, '0');
+  return '#' + c(0) + c(8) + c(4);
+}
+function hexHsl(hex){
+  const m = /^#?([\da-f]{2})([\da-f]{2})([\da-f]{2})$/i.exec(hex || '');
+  if (!m) return [0, 70, 50];
+  const [r, g, b] = m.slice(1).map(v => parseInt(v, 16) / 255);
+  const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
+  const l = (mx + mn) / 2;
+  const s = d === 0 ? 0 : d / (1 - Math.abs(2 * l - 1));
+  let h = 0;
+  if (d !== 0){
+    if (mx === r) h = ((g - b) / d) % 6;
+    else if (mx === g) h = (b - r) / d + 2;
+    else h = (r - g) / d + 4;
+    h *= 60; if (h < 0) h += 360;
+  }
+  return [Math.round(h), Math.round(s * 100), Math.round(l * 100)];
+}
+
+// Ocho tonos por tres claridades, más seis grises: 30 chips.
+// La primera versión tenía 56 y la hoja crecía tanto que el botón de confirmar
+// quedaba fuera de la pantalla del teléfono. Para el resto de los colores están
+// los deslizadores, que es justo para lo que sirven.
+const CS_TONOS = (() => {
+  const out = [];
+  [72, 52, 34].forEach(l =>
+    [0, 28, 52, 120, 175, 210, 265, 320].forEach(h => out.push(hslHex(h, 70, l))));
+  [100, 84, 64, 44, 24, 0].forEach(l => out.push(hslHex(0, 0, l)));
+  return out;
+})();
+
+let csHSL = [0, 70, 50];
+
+function csRecientes(){
+  try { return JSON.parse(localStorage.getItem('mandalas.recientes') || '[]'); }
+  catch { return []; }
+}
+function csGuardarReciente(hex){
+  const l = [hex].concat(csRecientes().filter(c => c !== hex)).slice(0, 10);
+  try { localStorage.setItem('mandalas.recientes', JSON.stringify(l)); } catch {}
+}
+
+function csPintar(){
+  const [h, s, l] = csHSL, hex = hslHex(h, s, l);
+  $('csMuestra').style.background = hex;
+  $('csHex').textContent = hex.toUpperCase();
+  $('csH').value = h; $('csS').value = s; $('csL').value = l;
+  // Cada deslizador muestra el resultado de moverlo, no una barra genérica.
+  $('csH').style.backgroundImage = 'linear-gradient(to right,'
+    + [0,60,120,180,240,300,360].map(t => hslHex(t, s, l)).join(',') + ')';
+  $('csS').style.backgroundImage =
+    `linear-gradient(to right,${hslHex(h,0,l)},${hslHex(h,100,l)})`;
+  $('csL').style.backgroundImage =
+    `linear-gradient(to right,${hslHex(h,s,4)},${hslHex(h,s,50)},${hslHex(h,s,96)})`;
+  document.querySelectorAll('#csTonos b').forEach(b =>
+    b.classList.toggle('on', b.dataset.c.toLowerCase() === hex.toLowerCase()));
+}
+
+function abrirColor(){
+  csHSL = hexHsl(colorActivo);
+  const rej = $('csTonos');
+  if (!rej.childElementCount)
+    CS_TONOS.forEach(c => {
+      const b = document.createElement('b');
+      b.style.background = c; b.dataset.c = c;
+      b.onclick = () => { csHSL = hexHsl(c); csPintar(); };
+      rej.appendChild(b);
+    });
+  const rec = $('csRecientes');
+  rec.innerHTML = '';
+  csRecientes().forEach(c => {
+    const b = document.createElement('b');
+    b.style.background = c; b.title = c;
+    b.onclick = () => { csHSL = hexHsl(c); csPintar(); };
+    rec.appendChild(b);
+  });
+  csPintar();
+  $('colorSheet').hidden = false;
+}
+function cerrarColor(){ $('colorSheet').hidden = true; }
+
+['csH','csS','csL'].forEach((id, i) => {
+  $(id).oninput = () => { csHSL[i] = +$(id).value; csPintar(); };
+});
+$('csCerrar').onclick = cerrarColor;
+document.querySelector('.cs-fondo').onclick = cerrarColor;
+$('csUsar').onclick = () => {
+  colorActivo = hslHex(...csHSL);
+  csGuardarReciente(colorActivo);
+  cerrarColor();
+  dibujarSwatches();
+  avisar('Color listo: toca una figura para pintarla');
+};
 
 // --- capas (alternativa a tocar el dibujo) ---
 function dibujarCapas(){

@@ -653,6 +653,32 @@ entrar en esa guarda.
   colorear) que sobre negro u oro (previsualización de estampado).
 - **Sin librerías, sin red, sin fuentes remotas.** Funciona offline.
 
+### El selector de color es propio, no el del sistema
+
+Era un `<input type="color">`. En el escritorio abre una paleta cómoda, pero
+**ese input delega en el selector del sistema operativo**: en Android abre un
+diálogo tosco y en iPhone otro distinto. La misma app se usaba de tres maneras
+y en el celular era la peor — que es justo donde se usa.
+
+El selector propio (`#colorSheet`, `abrirColor()`) se ve igual en los tres y
+ofrece dos caminos, los dos pensados para el dedo:
+
+- **Rejilla de 30 chips** de 44 px — 8 tonos × 3 claridades + 6 grises. La
+  primera versión tenía 56 (12 tonos × 4 + 8 grises) y la hoja crecía tanto
+  que el botón de confirmar quedaba fuera de la pantalla del teléfono. Para el
+  resto de los colores están los deslizadores, que es para lo que sirven.
+- **Tono / Intensidad / Brillo**, en HSL, cada uno con su propio degradado de
+  fondo calculado con los otros dos valores: el color se elige mirando, no
+  leyendo un número.
+
+Detalles que importan: el botón de confirmar va `position:sticky` al fondo de la
+hoja; los últimos 10 colores usados quedan en `localStorage` (pintar suele
+querer repetir un color en varias capas); y en escritorio la hoja se ancla
+abajo a la derecha en vez de ocupar todo el ancho.
+
+`hslHex()` / `hexHsl()` hacen la conversión, comprobada de ida y vuelta sobre
+ocho colores con tolerancia de 6/765 en la suma de canales.
+
 ## Preparado para empaquetar (Capacitor)
 
 Dos puntos del código son la frontera con lo nativo. Al empaquetar, solo se
