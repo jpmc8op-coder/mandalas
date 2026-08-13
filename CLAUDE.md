@@ -759,10 +759,41 @@ probabilidad de banda vacía **baja** con el Detalle, que es lo que más se nota
 - Export PNG correcto en los siete estilos, incluidos los que usan `evenodd`
   (pads, tuercas) y `tr` (siluetas, rosetas).
 
-## Pendiente
+## Camino a publicación
 
-- [ ] Publicar en una URL gratis (GitHub Pages / Netlify) y validar si la gente
-      vuelve, **antes** de invertir en empaquetado y tiendas.
+Cuatro fases. Cada una se valida antes de pagar por la siguiente.
+
+| Fase | Qué es | Cuesta | Estado |
+|---|---|---|---|
+| 0 | Repo git, iconos PNG, service worker, README | — | **hecho** |
+| 1 | Web pública en GitHub Pages (HTTPS gratis) | — | falta la cuenta de GitHub |
+| 2 | Instalable como app (PWA) desde el navegador | — | listo; se comprueba al estar en HTTPS |
+| 3 | APK/AAB nativo con Capacitor | requiere Node.js + Android Studio | pendiente |
+| 4 | Publicación en tiendas | Google USD 25 pago único · Apple USD 99/año + Mac | pendiente |
+
+**Fase 0 (hecha).** `git init` + primer commit; `sw.js` (red primero para el
+HTML, caché primero para iconos — servir el HTML desde caché enterraría
+cualquier corrección, porque toda la app vive en ese archivo); iconos PNG 192,
+512, 1024 y `apple-touch-icon` 180; `manifest.json` con los PNG (Android e iOS
+no bastan con SVG); metas de `apple-mobile-web-app-*`; `.gitignore` y `README`.
+
+> **Los iconos se generaron con Chrome headless a 1024 y se redujeron con
+> `System.Drawing`.** Capturar directamente a 192 o 180 devuelve una imagen en
+> blanco: Chrome impone un tamaño mínimo de ventana y el `--window-size` chico
+> se ignora. El archivo salía de 700 bytes en vez de 19 KB, que es la señal.
+
+**Fase 1.** Repo público `mandalas` en GitHub → `git remote add origin` →
+`git push -u origin main` → Settings ▸ Pages ▸ Deploy from branch `main` / root.
+La URL queda `https://USUARIO.github.io/mandalas/`. Actualizar el enlace del
+README. Sin `gh` instalado, el push lo tiene que autenticar el usuario.
+
+**Fase 3.** `npm i @capacitor/core @capacitor/cli`, `npx cap init`,
+`npx cap add android`, la carpeta web es la raíz del proyecto. Ojo con lo ya
+resuelto en el código: `replaceState` en vez de `pushState` (el botón atrás del
+webview), `navigator.share` con respaldo a descarga, y `esPro()` en la sección 1
+como único punto donde se decide qué está bloqueado.
+
+## Pendiente
 - [ ] Galería local con `localStorage` guardando solo estilo + semilla + paleta
       + colores manuales (un proyecto guardado debe pesar menos de 1 KB, nunca
       imágenes).
