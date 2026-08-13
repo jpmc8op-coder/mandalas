@@ -653,6 +653,40 @@ entrar en esa guarda.
   colorear) que sobre negro u oro (previsualización de estampado).
 - **Sin librerías, sin red, sin fuentes remotas.** Funciona offline.
 
+### El lienzo se ajusta al dibujo (`ajustarLienzo()`)
+
+En vista plana el `viewBox` no es 1000 fijo: se mide la caja real del dibujo
+después de pintarlo y se recorta a eso más 8 de margen. En un teléfono de 375 px
+el mandala pasó de **325 a 376 px de diámetro (+16% de lado, +34% de área)**, sin
+tocar la interfaz.
+
+**Un margen fijo no sirve, y medirlo lo demostró:** sobre 25 semillas por estilo,
+el hindú llega a 436 y el de robots a **495 de 500**. La razón es que la esquina
+de un motivo ancho sobresale de su radio: a radio `r` con medio sector `hw`, la
+esquina cae en `r / cos(hw)`. Con las repeticiones variando por anillo, eso no se
+deduce de los radios — hay que medirlo. Un `viewBox` de 470 (que parecía
+generoso) habría recortado circuitos y robots.
+
+Por eso se mide con `getBBox()` **después** de insertar el SVG, y se corrigen el
+`viewBox` y el rectángulo de fondo sobre el elemento ya insertado: no hace falta
+regenerar el marcado. `getBBox()` ignora el grosor del trazo, de ahí el margen.
+El valor queda en `LIENZO_M`, que `svgMarkup()` usa también al exportar, para que
+el PNG y el SVG salgan con el mismo encuadre que la pantalla.
+
+En **maqueta no se toca**: la camiseta, la bolsa, la taza y la pared están
+dibujadas en el espacio de 1000 y se recortarían.
+
+### El panel se pliega
+
+Botón `▼` en la barra de pestañas. Elegir una pestaña lo despliega solo — si no,
+se tocaba "Color" y no pasaba nada visible.
+
+Ojo con la expectativa: **en un teléfono en vertical, plegar el panel NO agranda
+el mandala**, porque el límite es el ancho de la pantalla, no el alto (medido:
+escena de 410 px de alto contra 375 de ancho). Sirve para ver el dibujo entero
+sin estorbo y para cuando se está con zoom. Lo que sí lo agranda es el lienzo
+ajustado de arriba y bajar el relleno lateral de `#escena` a 3 px.
+
 ### Lo que se está pintando sobrevive a cerrar la app
 
 `localStorage['mandalas.actual']` guarda **la misma instantánea que usa el
@@ -860,6 +894,13 @@ probabilidad de banda vacía **baja** con el Detalle, que es lo que más se nota
 - El fondo pintado se toca de verdad: `elementFromPoint` sobre un hueco devuelve
   el rect `data-i="-1"`, y la exportación a PNG sale con ese color (píxel de la
   esquina medido: exactamente el elegido).
+- Lienzo ajustado: **cero recortes en 140 mandalas** (7 estilos × 20 semillas a
+  simetría 12, 8 anillos y detalle 80), comparando la caja del dibujo contra el
+  `viewBox` resultante. Lado por estilo: hindú 444 · natura 453–470 ·
+  animal 452–470 · geo 464–469 · africano 460–468 · circuito 451–493 ·
+  robot 493–500. Las cuatro maquetas conservan el lienzo de 1000.
+- Export con lienzo ajustado: el PNG de 700 px sale con los cuatro bordes en
+  blanco de papel, o sea que el dibujo no toca el borde.
 - Persistencia comprobada en los tres casos: reabrir sin semilla en la URL
   restaura estilo, ajustes, fondo, acabado, modo y los colores figura por
   figura (804 bytes guardados); abrir un enlace con otra semilla muestra ese

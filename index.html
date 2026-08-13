@@ -40,7 +40,9 @@
   #escena{
     flex:1;position:relative;min-height:0;
     display:flex;align-items:center;justify-content:center;
-    padding:calc(var(--sa-t) + 8px) 8px 8px;
+    /* En un teléfono el mandala está limitado por el ANCHO, no por el alto:
+       cada píxel de relleno lateral es un píxel menos de dibujo. */
+    padding:calc(var(--sa-t) + 6px) 3px 6px;
     overflow:hidden;
   }
   #lienzo{
@@ -87,7 +89,11 @@
     background:transparent;color:var(--txt-2);font-size:14px;font-weight:600;
   }
   #tabs button.on{background:var(--panel-2);color:var(--txt)}
-  .hoja{display:none;padding:12px 12px 14px;background:var(--panel-2);max-height:46vh;overflow-y:auto}
+  /* Plegar el panel: cuando se está pintando, lo que se quiere es el dibujo. Va
+     como botón visible en la barra de pestañas, no como gesto oculto. */
+  #bPlegar{flex:0 0 auto;width:40px;font-size:13px;color:var(--txt-2)}
+  #panel.plegado .hoja{display:none}
+  .hoja{display:none;padding:12px 12px 14px;background:var(--panel-2);max-height:42vh;overflow-y:auto}
   .hoja.on{display:block}
 
   .fila{display:flex;align-items:center;gap:10px;margin-bottom:11px}
@@ -260,6 +266,7 @@
     <button data-hoja="gen" class="on">Generar</button>
     <button data-hoja="col">Color</button>
     <button data-hoja="ver">Ver</button>
+    <button id="bPlegar" title="Plegar el panel" aria-label="Plegar el panel">▼</button>
   </div>
 
   <!-- ---------------- GENERAR ---------------- -->
@@ -3550,7 +3557,16 @@ function svgMarkup(op){
   const acabado = op.acabado ?? estado.acabado;
   const filtro = FILTROS[acabado] ? ` filter="url(#f${acabado[0].toUpperCase()}${acabado.slice(1)})"` : '';
 
-  let s = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${-VB/2} ${-VB/2} ${VB} ${VB}"${tam}>`;
+  // Lienzo ajustado al dibujo. El de 1000 dejaba hasta un 13% de margen vacío
+  // alrededor, que en un teléfono es el mandala viéndose más pequeño a cambio
+  // de nada. Pero un margen FIJO no sirve: medido sobre 25 semillas por estilo,
+  // el hindú llega a 436 y el de robots a 495, porque las esquinas de un motivo
+  // ancho sobresalen del radio máximo (a radio r y medio sector hw, la esquina
+  // cae en r/cos(hw)). Así que lo mide `ajustarLienzo()` en cada dibujo y lo
+  // deja en LIENZO_M. En maqueta NO se toca: la camiseta, la taza y la pared
+  // están dibujadas en el espacio de 1000 y se recortarían.
+  const M = V ? VB / 2 : LIENZO_M;
+  let s = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${-M} ${-M} ${M*2} ${M*2}"${tam}>`;
   const recorte = V && V.clip ? `<clipPath id="cVista"><path d="${V.clip}"/></clipPath>` : '';
   const defs = (fondo === 'url(#oro)' ? GRADIENTE_ORO : '') + (FILTROS[acabado] || '') + recorte;
   if (defs) s += `<defs>${defs}</defs>`;
@@ -3561,8 +3577,8 @@ function svgMarkup(op){
     // región: los huecos de un mandala se comunican entre sí, así que se pintan
     // todos a la vez — no hay hueco por hueco sin rasterizar el dibujo.
     const rect = estado.fondoColor || fondo;
-    if (rect) s += `<rect class="parte" data-i="-1" x="${-VB/2}" y="${-VB/2}" `
-                 + `width="${VB}" height="${VB}" fill="${rect}"/>`;
+    if (rect) s += `<rect class="parte" data-i="-1" x="${-M}" y="${-M}" `
+                 + `width="${M*2}" height="${M*2}" fill="${rect}"/>`;
     // Las figuras conservan el color del PAPEL aunque el fondo esté pintado: en
     // una lámina, pintar alrededor no tiñe lo que aún no se ha coloreado.
     s += pintado(lineas, !!px, lineas ? opaco(fondo) : null, filtro, '');
@@ -3581,13 +3597,43 @@ function svgMarkup(op){
     if (V.encima) s += V.encima(material, '#00000026');
   }
 
-  if (op.marcaAgua) s += `<text x="0" y="${VB/2 - 24}" text-anchor="middle" font-family="sans-serif" `
+  if (op.marcaAgua) s += `<text x="0" y="${M - 24}" text-anchor="middle" font-family="sans-serif" `
                        + `font-size="26" fill="#00000055">Mandalas</text>`;
   return s + `</svg>`;
 }
 
+/* Medio lado del lienzo en vista plana. Lo fija `ajustarLienzo()` con la caja
+   real del dibujo; arranca en el valor seguro de siempre. */
+let LIENZO_M = VB / 2;
+
+/* Ajusta el lienzo a lo que ocupa este mandala. Se mide DESPUÉS de dibujar,
+   porque el alcance depende de las repeticiones de cada anillo y no se puede
+   deducir de los radios. Si cambia, se corrige el viewBox y el rectángulo de
+   fondo sobre el SVG ya insertado: no hace falta volver a generar el marcado. */
+function ajustarLienzo(){
+  if (estado.vista !== 'plano') return;
+  const svg = svgHost.querySelector('svg'), g = svg && svg.querySelector('g');
+  if (!svg || !g) return;
+  let b;
+  try { b = g.getBBox(); } catch { return; }
+  if (!b || !b.width) return;
+  // getBBox ignora el grosor del trazo: se añade un margen para que el contorno
+  // exterior no quede cortado justo al borde.
+  const ext = Math.max(Math.abs(b.x), Math.abs(b.y), b.x + b.width, b.y + b.height) + 8;
+  const M = Math.min(VB / 2, Math.max(120, Math.ceil(ext)));
+  if (Math.abs(M - LIENZO_M) < 2) return;
+  LIENZO_M = M;
+  svg.setAttribute('viewBox', `${-M} ${-M} ${M*2} ${M*2}`);
+  const r = svg.querySelector('rect.parte[data-i="-1"]');
+  if (r){
+    r.setAttribute('x', -M); r.setAttribute('y', -M);
+    r.setAttribute('width', M*2); r.setAttribute('height', M*2);
+  }
+}
+
 function pintar(conFade){
   svgHost.innerHTML = svgMarkup();
+  ajustarLienzo();
   svgHost.classList.toggle('damero', estado.fondo === 'transparente'
     && !estado.fondoColor && estado.vista === 'plano');
   if (conFade !== false){
@@ -3605,10 +3651,20 @@ const $ = id => document.getElementById(id);
 const svgHost = $('svgHost'), lienzo = $('lienzo'), iSemilla = $('iSemilla');
 const bDeshacer = $('bDeshacer'), bRehacer = $('bRehacer');
 
-document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => {
-  document.querySelectorAll('#tabs button').forEach(x => x.classList.toggle('on', x === b));
+document.querySelectorAll('#tabs button[data-hoja]').forEach(b => b.onclick = () => {
+  document.querySelectorAll('#tabs button[data-hoja]').forEach(x => x.classList.toggle('on', x === b));
   document.querySelectorAll('.hoja').forEach(h => h.classList.toggle('on', h.id === 'hoja-' + b.dataset.hoja));
+  // Elegir una pestaña con el panel plegado tiene que abrirlo: si no, se toca
+  // "Color" y no pasa nada visible.
+  $('panel').classList.remove('plegado');
+  $('bPlegar').textContent = '▼';
 });
+
+$('bPlegar').onclick = () => {
+  const p = $('panel').classList.toggle('plegado');
+  $('bPlegar').textContent = p ? '▲' : '▼';
+  $('bPlegar').title = p ? 'Mostrar el panel' : 'Plegar el panel';
+};
 
 function marcar(cont, attr, valor){
   document.querySelectorAll(cont + ' button').forEach(b =>
