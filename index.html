@@ -3146,8 +3146,21 @@ function instantanea(){
                           f:estado.fondo, v:estado.vista, l:estado.lineas, t:estado.trazos,
                           a:estado.acabado, b:estado.enBlanco });
 }
-function empujar(){
+/* Lo que se está pintando sobrevive a cerrar la app. Se guarda la misma
+   instantánea que usa el historial —semilla, ajustes, paleta y el color de cada
+   figura—, que son menos de 1 KB: nunca la imagen. Al volver, el mandala se
+   regenera de la semilla y se le aplican los colores guardados. */
+const GUARDADO = 'mandalas.actual';
+function guardarActual(){
+  try { localStorage.setItem(GUARDADO, instantanea()); } catch {}
+}
+
+// `guardar:false` para el arranque cuando se abre el enlace compartido de otra
+// persona: mirar un mandala ajeno no puede borrar el que uno tenía a medio
+// pintar. En cuanto se toca algo, se guarda — ahí sí se cambió de trabajo.
+function empujar(guardar){
   const snap = instantanea();
+  if (guardar !== false) guardarActual();
   if (historial[hPtr] === snap) return;
   historial.splice(hPtr + 1);
   historial.push(snap);
@@ -3163,6 +3176,10 @@ function aplicarSnap(snap){
   estado.acabado = o.a || 'plano';
   estado.enBlanco = !!o.b;
   mandala = generar(estado.semilla, estado.cfg);
+  // Red de seguridad para lo que se restaura de una sesión anterior: si la app
+  // se actualizó y ese estilo ahora genera otro número de figuras, los colores
+  // guardados ya no corresponden y saldrían piezas grises sueltas.
+  if (estado.colores.length !== mandala.partes.length) colorearInicial();
   sincronizarControles();
   pintar(false);
   botonesHistorial();
@@ -4050,13 +4067,30 @@ $('bSVG').onclick = () => entregar(svgBlob(), `mandala-${estado.semilla}.svg`);
    ========================================================================= */
 (function inicio(){
   const q = parseInt(new URLSearchParams(location.search).get('seed') || '', 10);
-  estado.semilla = isNaN(q) ? Math.floor(Math.random() * 1e9) : q;
-  mandala = generar(estado.semilla, estado.cfg);
-  colorearInicial();
-  sincronizarControles();
-  pintar(true);
+
+  // Se recupera lo último que se estaba pintando, salvo que la dirección traiga
+  // una semilla DISTINTA a la guardada: eso significa que alguien abrió un
+  // enlace compartido, y ahí manda el enlace. Como `pintar()` deja la semilla
+  // en la URL, al recargar coincide y se restaura igual.
+  let restaurado = false;
+  try {
+    const crudo = localStorage.getItem(GUARDADO);
+    const o = crudo && JSON.parse(crudo);
+    if (o && o.c && Array.isArray(o.k) && o.k.length && (isNaN(q) || q === o.s)){
+      aplicarSnap(crudo);
+      restaurado = true;
+    }
+  } catch {}
+
+  if (!restaurado){
+    estado.semilla = isNaN(q) ? Math.floor(Math.random() * 1e9) : q;
+    mandala = generar(estado.semilla, estado.cfg);
+    colorearInicial();
+    sincronizarControles();
+    pintar(true);
+  }
   botonesZoom();
-  empujar();
+  empujar(restaurado);
 
   // Service worker: la app abre sin internet. Solo funciona servida por HTTPS
   // (o localhost); con file:// el registro falla y no pasa nada — la app anda

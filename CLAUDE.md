@@ -653,6 +653,30 @@ entrar en esa guarda.
   colorear) que sobre negro u oro (previsualización de estampado).
 - **Sin librerías, sin red, sin fuentes remotas.** Funciona offline.
 
+### Lo que se está pintando sobrevive a cerrar la app
+
+`localStorage['mandalas.actual']` guarda **la misma instantánea que usa el
+historial** —semilla, ajustes, paleta, fondo, vista, acabado y el color de cada
+figura—: unos 800 bytes. Nunca la imagen. Al volver, el mandala se regenera de
+la semilla y se le aplican los colores guardados. Se escribe en `empujar()`, que
+es por donde pasa todo cambio de estado, así que no hay nada que recordar
+guardar.
+
+**Qué gana el enlace compartido.** Al arrancar se restaura lo guardado *salvo*
+que la URL traiga una semilla distinta a la guardada: eso significa que alguien
+abrió un enlace ajeno, y ahí manda el enlace. Como `pintar()` deja la semilla en
+la URL con `replaceState`, al recargar la página coincide y se restaura igual.
+
+**Mirar no puede borrar.** Al abrir un enlace ajeno, el arranque llama a
+`empujar(false)`: no guarda. Si no, con solo mirar el mandala de otra persona se
+perdía el propio a medio pintar. En cuanto se toca algo sí se guarda — ahí la
+persona cambió de trabajo a propósito.
+
+**Red de seguridad al actualizar la app.** Si un estilo cambia y ese mismo
+generador ahora produce otro número de figuras, los colores guardados dejan de
+corresponder. `aplicarSnap()` compara largos y recolorea si no cuadran; sin eso
+aparecían piezas grises sueltas (`estado.colores[i] || '#333'`).
+
 ### Lámina en blanco: pintar desde cero
 
 `estado.enBlanco` + `vaciarColores()`. La mandala nace como una lámina recién
@@ -811,6 +835,17 @@ probabilidad de banda vacía **baja** con el Detalle, que es lo que más se nota
   válido.
 - Export PNG correcto en los siete estilos, incluidos los que usan `evenodd`
   (pads, tuercas) y `tr` (siluetas, rosetas).
+- Lámina en blanco: 2100 combinaciones (los 1050 de siempre × modo normal y en
+  blanco) producen SVG válido; pintar, deshacer y rehacer funcionan figura a
+  figura; cambiar de paleta no borra lo pintado; el mandala siguiente nace en
+  blanco.
+- Persistencia comprobada en los tres casos: reabrir sin semilla en la URL
+  restaura estilo, ajustes, fondo, acabado, modo y los colores figura por
+  figura (804 bytes guardados); abrir un enlace con otra semilla muestra ese
+  mandala y **no** pisa lo guardado; volver a abrir sigue recuperando lo propio.
+  Datos corruptos y guardados de una versión anterior con menos colores caen
+  ambos en el camino seguro.
+- Ida y vuelta por `instantanea()` / `aplicarSnap()` idéntica en los 7 estilos.
 
 ## Camino a publicación
 
