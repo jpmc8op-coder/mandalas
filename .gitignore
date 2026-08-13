@@ -1,0 +1,19 @@
+# Salida de la herramienta de hojas de contacto (dev/hoja.ps1)
+_capturas/
+_hoja.html
+_icono.html
+*.bak
+
+# Empaquetado nativo (Capacitor), cuando llegue
+node_modules/
+android/
+ios/
+.gradle/
+*.keystore
+*.jks
+key.properties
+
+# Sistema
+Thumbs.db
+desktop.ini
+.DS_Store

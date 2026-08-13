@@ -1,0 +1,3859 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#141821">
+<meta name="description" content="Genera mandalas procedurales y coloréalos con un toque.">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="icon" href="icon-192.png" sizes="192x192" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Mandalas">
+<title>Mandalas</title>
+<style>
+  :root{
+    --bg:#141821;
+    --panel:#1c212d;
+    --panel-2:#242b3a;
+    --linea:#333c4f;
+    --txt:#e8ecf4;
+    --txt-2:#8e99b0;
+    --acento:#f2a65a;
+    --sa-b:env(safe-area-inset-bottom,0px);
+    --sa-t:env(safe-area-inset-top,0px);
+    --sa-l:env(safe-area-inset-left,0px);
+    --sa-r:env(safe-area-inset-right,0px);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;margin:0}
+  body{
+    background:var(--bg);color:var(--txt);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;
+    display:flex;flex-direction:column;overflow:hidden;
+    overscroll-behavior:none;touch-action:none;
+  }
+
+  /* ---------- Lienzo ---------- */
+  #escena{
+    flex:1;position:relative;min-height:0;
+    display:flex;align-items:center;justify-content:center;
+    padding:calc(var(--sa-t) + 8px) 8px 8px;
+    overflow:hidden;
+  }
+  #lienzo{
+    width:100%;height:100%;
+    display:flex;align-items:center;justify-content:center;
+    transform-origin:center center;will-change:transform;
+  }
+  #svgHost{width:100%;height:100%;display:flex;align-items:center;justify-content:center}
+  #svgHost.damero{
+    background-image:
+      linear-gradient(45deg,#c9ced8 25%,transparent 25%,transparent 75%,#c9ced8 75%),
+      linear-gradient(45deg,#c9ced8 25%,#eef1f5 25%,#eef1f5 75%,#c9ced8 75%);
+    background-size:22px 22px;background-position:0 0,11px 11px;
+  }
+  #svgHost svg{width:100%;height:100%;max-width:100%;max-height:100%;display:block}
+  #svgHost.fade{animation:aparece .28s ease}
+  @keyframes aparece{from{opacity:0;transform:scale(.965)}to{opacity:1;transform:scale(1)}}
+  .parte path{transition:fill .18s ease,stroke .18s ease}
+
+  #zoomInfo{
+    position:absolute;top:calc(var(--sa-t) + 10px);left:50%;transform:translateX(-50%);
+    background:rgba(0,0,0,.55);color:#fff;font-size:12px;padding:4px 10px;border-radius:999px;
+    opacity:0;transition:opacity .2s;pointer-events:none;
+  }
+  #zoomInfo.ver{opacity:1}
+
+  #acciones{
+    position:absolute;top:calc(var(--sa-t) + 10px);right:calc(var(--sa-r) + 10px);
+    display:flex;gap:6px;
+  }
+  #acciones button{
+    width:38px;height:38px;border-radius:12px;border:1px solid var(--linea);
+    background:rgba(28,33,45,.85);color:var(--txt);font-size:15px;cursor:pointer;
+    display:grid;place-items:center;backdrop-filter:blur(6px);
+  }
+  #acciones button:disabled{opacity:.35}
+  #acciones button.on{background:var(--acento);border-color:var(--acento);color:#1a1206}
+
+  /* ---------- Panel ---------- */
+  #panel{background:var(--panel);border-top:1px solid var(--linea);padding-bottom:var(--sa-b);flex:0 0 auto}
+  #tabs{display:flex;gap:4px;padding:8px 10px 0}
+  #tabs button{
+    flex:1;padding:9px 0;border:0;border-radius:10px 10px 0 0;cursor:pointer;
+    background:transparent;color:var(--txt-2);font-size:14px;font-weight:600;
+  }
+  #tabs button.on{background:var(--panel-2);color:var(--txt)}
+  .hoja{display:none;padding:12px 12px 14px;background:var(--panel-2);max-height:46vh;overflow-y:auto}
+  .hoja.on{display:block}
+
+  .fila{display:flex;align-items:center;gap:10px;margin-bottom:11px}
+  .fila label{font-size:12px;color:var(--txt-2);width:82px;flex:0 0 auto}
+  .fila output{font-size:12px;color:var(--txt);width:26px;text-align:right;flex:0 0 auto;font-variant-numeric:tabular-nums}
+  input[type=range]{flex:1;-webkit-appearance:none;appearance:none;height:26px;background:transparent;margin:0}
+  input[type=range]::-webkit-slider-runnable-track{height:4px;background:var(--linea);border-radius:2px}
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:var(--acento);
+    margin-top:-9px;border:0;cursor:pointer;
+  }
+  input[type=range]::-moz-range-track{height:4px;background:var(--linea);border-radius:2px}
+  input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:var(--acento);border:0}
+
+  .btn{
+    width:100%;padding:13px;border-radius:12px;border:0;cursor:pointer;
+    background:var(--acento);color:#1a1206;font-size:15px;font-weight:700;
+  }
+  .btn.sec{background:var(--panel);color:var(--txt);border:1px solid var(--linea);font-weight:600}
+  .duo{display:flex;gap:8px}
+
+  .semilla{display:flex;gap:8px;align-items:center;margin-bottom:11px}
+  .semilla input{
+    flex:1;background:var(--panel);border:1px solid var(--linea);color:var(--txt);
+    border-radius:10px;padding:10px;font-size:14px;font-variant-numeric:tabular-nums;min-width:0;
+  }
+
+  .titulo{font-size:11px;color:var(--txt-2);text-transform:uppercase;letter-spacing:.07em;margin:0 0 7px}
+
+  /* filas de opciones */
+  /* Las filas que sí se deslizan llevan un degradado en el borde derecho para
+     que se vea que hay más contenido fuera de pantalla. */
+  .ops{
+    display:flex;gap:7px;overflow-x:auto;padding-bottom:6px;margin-bottom:12px;
+    scrollbar-width:none;
+    -webkit-mask-image:linear-gradient(to right,#000 calc(100% - 26px),transparent);
+            mask-image:linear-gradient(to right,#000 calc(100% - 26px),transparent);
+  }
+  .ops::-webkit-scrollbar{display:none}
+  .seg.ops{-webkit-mask-image:none;mask-image:none}
+  .ops button{
+    flex:0 0 auto;padding:10px 14px;border-radius:10px;border:1px solid var(--linea);cursor:pointer;
+    background:var(--panel);color:var(--txt-2);font-size:13px;white-space:nowrap;
+  }
+  .ops button.on{border-color:var(--acento);color:var(--txt);background:#2c3446}
+  .seg{display:flex;gap:7px;margin-bottom:12px}
+  .seg button{flex:1}
+
+  /* Las paletas van en rejilla, no en fila deslizante: con 28 solo se veían
+     cuatro y nada indicaba que hubiera más. */
+  #paletas{
+    display:grid;grid-template-columns:repeat(auto-fill,minmax(66px,1fr));
+    gap:6px;overflow:visible;margin-bottom:12px;
+  }
+  .paleta{
+    display:flex;border-radius:8px;overflow:hidden;cursor:pointer;
+    border:2px solid transparent;height:30px;position:relative;
+  }
+  .paleta.on{border-color:var(--acento);box-shadow:0 0 0 2px #f2a65a55}
+  .paleta i{display:block;flex:1;height:100%}
+  .paleta.bloq::after{content:"🔒";position:absolute;inset:0;display:grid;place-items:center;background:rgba(0,0,0,.55);font-size:13px}
+
+  #swatches{display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+  .sw{width:40px;height:40px;border-radius:50%;border:2px solid transparent;cursor:pointer;flex:0 0 auto}
+  .sw.on{border-color:#fff;box-shadow:0 0 0 2px var(--acento)}
+  /* Botón de color libre: anillo de arcoíris para que se distinga de los
+     swatches de la paleta y se lea como "cualquier otro color". */
+  #pickerWrap{
+    position:relative;width:48px;height:48px;border-radius:50%;flex:0 0 auto;cursor:pointer;
+    display:grid;place-items:center;margin-left:2px;
+    background:conic-gradient(from 0deg,#ff3b30,#ff9500,#ffcc00,#34c759,#00c7be,
+                              #0a84ff,#5e5ce6,#bf5af2,#ff2d55,#ff3b30);
+    box-shadow:0 2px 10px #0007;
+    animation:latido 2.6s ease-in-out infinite;
+  }
+  @keyframes latido{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+  #pickerWrap i{
+    width:30px;height:30px;border-radius:50%;display:grid;place-items:center;
+    border:2px solid #fff;font-style:normal;font-size:17px;line-height:1;font-weight:700;
+    color:#fff;text-shadow:0 1px 3px #000c;
+  }
+  #pickerWrap input{
+    position:absolute;inset:0;width:100%;height:100%;opacity:0;
+    border:0;padding:0;cursor:pointer;
+  }
+
+  .capa{flex:0 0 auto;width:34px;height:34px;border-radius:9px;border:2px solid var(--linea);cursor:pointer;position:relative}
+  .capa span{position:absolute;bottom:-1px;right:1px;font-size:9px;color:#fff;text-shadow:0 0 3px #000;font-weight:700}
+
+  .muestraFondo{
+    flex:0 0 auto;width:46px;height:38px;border-radius:10px;border:2px solid var(--linea);
+    cursor:pointer;position:relative;overflow:hidden;
+  }
+  .muestraFondo.on{border-color:var(--acento)}
+  .muestraFondo b{
+    position:absolute;left:0;right:0;bottom:0;font-size:8px;text-align:center;
+    background:#000a;color:#fff;font-weight:600;letter-spacing:.02em;
+  }
+
+  #aviso{
+    position:fixed;left:50%;bottom:calc(var(--sa-b) + 16px);transform:translate(-50%,20px);
+    background:#000d;color:#fff;padding:10px 16px;border-radius:999px;font-size:13px;
+    opacity:0;transition:.25s;pointer-events:none;z-index:50;max-width:88vw;text-align:center;
+  }
+  #aviso.ver{opacity:1;transform:translate(-50%,0)}
+
+  /* ---------- Escritorio ---------- */
+  @media (min-width:860px){
+    body{flex-direction:row}
+    #escena{padding:24px}
+    #panel{width:330px;flex:0 0 330px;border-top:0;border-left:1px solid var(--linea);overflow-y:auto;padding-top:var(--sa-t)}
+    #tabs{padding:14px 12px 0}
+    .hoja{background:transparent;max-height:none;overflow:visible}
+  }
+</style>
+</head>
+<body>
+
+<div id="escena">
+  <div id="lienzo"><div id="svgHost"></div></div>
+  <div id="zoomInfo">100%</div>
+  <div id="acciones">
+    <button id="bDeshacer" title="Deshacer">↶</button>
+    <button id="bRehacer" title="Rehacer">↷</button>
+    <button id="bLineas" title="Ver solo líneas">✎</button>
+    <button id="bMenos" title="Alejar">−</button>
+    <button id="bMas" title="Acercar">+</button>
+    <button id="bZoom" title="Ver entera (100%)">⤢</button>
+  </div>
+</div>
+
+<div id="panel">
+  <div id="tabs">
+    <button data-hoja="gen" class="on">Generar</button>
+    <button data-hoja="col">Color</button>
+    <button data-hoja="ver">Ver</button>
+  </div>
+
+  <!-- ---------------- GENERAR ---------------- -->
+  <div class="hoja on" id="hoja-gen">
+    <p class="titulo">Estilo</p>
+    <div class="ops" id="estilos"></div>
+    <div class="fila" title="Cuántas veces se repite la figura alrededor del centro">
+      <label for="sSimetria">Simetría</label>
+      <input type="range" id="sSimetria" min="3" max="64" step="1" value="12" autocomplete="off">
+      <output id="oSimetria">12</output>
+    </div>
+    <div class="fila" title="Cuántas coronas concéntricas tiene el mandala">
+      <label for="sAnillos">Anillos</label>
+      <input type="range" id="sAnillos" min="3" max="14" step="1" value="6" autocomplete="off">
+      <output id="oAnillos">6</output>
+    </div>
+    <div class="fila" title="Cuántos adornos lleva cada figura: contornos interiores, puntos, perlas y nervaduras">
+      <label for="sDensidad">Detalle</label>
+      <input type="range" id="sDensidad" min="0" max="100" step="1" value="55" autocomplete="off"
+             title="Cuántos adornos lleva cada figura: contornos interiores, puntos, perlas y nervaduras">
+      <output id="oDensidad">55</output>
+    </div>
+    <div class="semilla">
+      <input type="text" id="iSemilla" inputmode="numeric" aria-label="Semilla" autocomplete="off">
+      <button class="btn sec" id="bCopiar" style="width:auto;padding:10px 14px">Copiar</button>
+    </div>
+    <button class="btn" id="bGenerar">Generar nuevo</button>
+    <div class="duo" style="margin-top:8px">
+      <button class="btn sec" id="bPNG">Guardar PNG</button>
+      <button class="btn sec" id="bSVG">Guardar SVG</button>
+    </div>
+  </div>
+
+  <!-- ---------------- COLOR ---------------- -->
+  <div class="hoja" id="hoja-col">
+    <p class="titulo">Paletas</p>
+    <div class="ops" id="paletas"></div>
+
+    <p class="titulo">Color activo</p>
+    <div id="swatches"></div>
+
+    <p class="titulo">Acabado</p>
+    <div class="seg ops" id="acabados">
+      <button data-acabado="plano" class="on">Plano</button>
+      <button data-acabado="acuarela">Acuarela</button>
+      <button data-acabado="lapiz">Lápiz</button>
+    </div>
+
+    <p class="titulo">Contornos</p>
+    <div class="seg ops" id="trazos">
+      <button data-trazos="tinta" class="on">Oscuros</button>
+      <button data-trazos="varios">Variados</button>
+      <button data-trazos="claro">Vivos</button>
+    </div>
+
+    <p class="titulo">Capas · toca para pintar</p>
+    <div class="ops" id="capas"></div>
+
+    <button class="btn" id="bAuto">Auto-colorear</button>
+  </div>
+
+  <!-- ---------------- VER ---------------- -->
+  <div class="hoja" id="hoja-ver">
+    <p class="titulo">Vista</p>
+    <div class="ops" id="vistas">
+      <button data-vista="plano" class="on">Plano</button>
+      <button data-vista="camiseta">Camiseta</button>
+      <button data-vista="bolsa">Bolsa</button>
+      <button data-vista="pared">Pared</button>
+      <button data-vista="taza">Taza</button>
+    </div>
+
+    <p class="titulo">Fondo / material</p>
+    <div class="ops" id="fondos"></div>
+
+    <p class="titulo">Sin color</p>
+    <div class="seg ops" id="modoLineas">
+      <button data-lineas="0" class="on">Con color</button>
+      <button data-lineas="1">Solo líneas</button>
+    </div>
+    <button class="btn sec" id="bImprimir">Página para colorear</button>
+  </div>
+</div>
+
+<div id="aviso"></div>
+
+<script>
+/* =========================================================================
+   1. LÍMITES Y FRONTERA DE PAGO
+   Todo lo premium se consulta con esPro()/limites(). Hoy esPro() es true;
+   el día que se conecte la compra in-app, solo cambia esta función.
+   ========================================================================= */
+const LIMITES_GRATIS = { exportPx: 800,  marcaAgua: true,  paletas: 3,        motivos: 5,
+                         estilos:['geo','natura'] };
+const LIMITES_PRO    = { exportPx: 2400, marcaAgua: false, paletas: Infinity, motivos: Infinity,
+                         estilos:['geo','hindu','africano','circuito','natura','animal','robot'] };
+
+function esPro(){ return true; }
+function limites(){ return esPro() ? LIMITES_PRO : LIMITES_GRATIS; }
+
+/* =========================================================================
+   2. PRNG DETERMINISTA (mulberry32)
+   Misma semilla -> mismo mandala, siempre.
+   ========================================================================= */
+function mulberry32(a){
+  return function(){
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+const elegir = (rnd, arr) => arr[Math.floor(rnd() * arr.length)];
+const entre  = (rnd, a, b) => a + rnd() * (b - a);
+
+/* =========================================================================
+   3. GEOMETRÍA Y CATÁLOGO DE MOTIVOS
+   Cada motivo se dibuja dentro de UN sector apuntando hacia arriba
+   (ángulo 0). El renderer lo replica con rotate().
+   ========================================================================= */
+const VB = 1000, R_MAX = 452, R_MIN = 24, D2R = Math.PI / 180;
+
+function pt(ang, rad){
+  const a = ang * D2R;
+  return [ +(rad * Math.sin(a)).toFixed(2), +(-rad * Math.cos(a)).toFixed(2) ];
+}
+const P = (ang, rad) => pt(ang, rad).join(',');
+
+function circuloPath(cx, cy, r){
+  r = +Math.max(r, 0.5).toFixed(2);
+  return `M ${(cx-r).toFixed(2)},${cy.toFixed(2)} a ${r},${r} 0 1,0 ${(2*r).toFixed(2)},0 a ${r},${r} 0 1,0 ${(-2*r).toFixed(2)},0 Z`;
+}
+function estrellaPath(cx, cy, r, puntas){
+  let d = '';
+  for (let i = 0; i < puntas * 2; i++){
+    const a = (i * 180 / puntas - 90) * D2R;
+    const rr = i % 2 ? r * 0.44 : r;
+    d += (i ? 'L ' : 'M ') + (cx + rr*Math.cos(a)).toFixed(2) + ',' + (cy + rr*Math.sin(a)).toFixed(2) + ' ';
+  }
+  return d + 'Z';
+}
+
+/* Sector de corona relleno: el trozo de anillo entre dos radios y dos ángulos.
+   Es la pieza base de todo el HUD del estilo circuito — los arcos gruesos con
+   huecos, los bloques sobre el arco y las marcas de escala son todos esto.
+   El ángulo crece en sentido horario (pt() usa 0 = arriba), que con la Y hacia
+   abajo del SVG es sweep 1 por fuera y sweep 0 al volver por dentro. */
+function sectorAnillo(r0, r1, a0, a1){
+  const grande = Math.abs(a1 - a0) > 180 ? 1 : 0;
+  return `M ${P(a0,r1)} A ${r1.toFixed(1)},${r1.toFixed(1)} 0 ${grande},1 ${P(a1,r1)} `
+       + `L ${P(a1,r0)} A ${r0.toFixed(1)},${r0.toFixed(1)} 0 ${grande},0 ${P(a0,r0)} Z`;
+}
+
+// firma: (r0, r1, hw, rnd) -> { d, trazo }
+const MOTIVOS = {
+  petalo(r0, r1, hw){
+    const mid = (r0 + r1) / 2;
+    return { d:`M ${P(0,r0)} Q ${P(-hw,mid)} ${P(0,r1)} Q ${P(hw,mid)} ${P(0,r0)} Z` };
+  },
+  gota(r0, r1, hw){
+    const h = r1 - r0;
+    return { d:`M ${P(0,r0)} C ${P(-hw*0.75, r0+h*0.32)} ${P(-hw, r1-h*0.12)} ${P(0,r1)} `
+              + `C ${P(hw, r1-h*0.12)} ${P(hw*0.75, r0+h*0.32)} ${P(0,r0)} Z` };
+  },
+  rombo(r0, r1, hw){
+    const mid = (r0 + r1) / 2;
+    return { d:`M ${P(0,r0)} L ${P(-hw,mid)} L ${P(0,r1)} L ${P(hw,mid)} Z` };
+  },
+  triangulo(r0, r1, hw){
+    return { d:`M ${P(-hw,r0)} L ${P(hw,r0)} L ${P(0,r1)} Z` };
+  },
+  arco(r0, r1, hw){
+    return { d:`M ${P(-hw,r0)} A ${r0.toFixed(2)},${r0.toFixed(2)} 0 0,1 ${P(hw,r0)} `
+              + `L ${P(hw,r1)} A ${r1.toFixed(2)},${r1.toFixed(2)} 0 0,0 ${P(-hw,r1)} Z` };
+  },
+  circulo(r0, r1, hw){
+    const mid = (r0 + r1) / 2;
+    const [cx, cy] = pt(0, mid);
+    const r = Math.min((r1 - r0) / 2, mid * Math.sin(hw * D2R)) * 0.94;
+    return { d: circuloPath(cx, cy, Math.max(r, 3)) };
+  },
+  punto(r0, r1, hw){
+    const mid = (r0 + r1) / 2;
+    const [cx, cy] = pt(0, mid);
+    const r = Math.min((r1 - r0) * 0.24, mid * Math.sin(hw * D2R) * 0.7, 16);
+    return { d: circuloPath(cx, cy, Math.max(r, 2.5)) };
+  },
+  estrella(r0, r1, hw, rnd){
+    const mid = (r0 + r1) / 2;
+    const [cx, cy] = pt(0, mid);
+    const r = Math.min((r1 - r0) / 2, mid * Math.sin(hw * D2R)) * 0.96;
+    return { d: estrellaPath(cx, cy, Math.max(r, 4), rnd() < 0.5 ? 5 : 6) };
+  },
+  radial(r0, r1){
+    return { d:`M ${P(0,r0)} L ${P(0,r1)}`, trazo:true };
+  },
+
+  /* --- motivos del vocabulario indio --- */
+  // Pétalo de loto: almendra apuntada en los dos extremos, más ancha hacia
+  // la mitad baja. Es la silueta de los anillos de loto del yantra.
+  loto(r0, r1, hw){
+    const h = r1 - r0;
+    return { d:`M ${P(0,r0)} C ${P(-hw*0.62, r0+h*0.08)} ${P(-hw, r0+h*0.48)} ${P(0,r1)} `
+              + `C ${P(hw, r0+h*0.48)} ${P(hw*0.62, r0+h*0.08)} ${P(0,r0)} Z` };
+  },
+  // Pétalo ojival: base ancha, hombros marcados y punta. Es LA forma de los
+  // pétalos de las láminas de mandala clásicas; la almendra de `loto` es más
+  // pobre y se nota enseguida.
+  ojival(r0, r1, hw){
+    const h = r1 - r0;
+    return { d:`M ${P(0,r0)} C ${P(-hw*0.98, r0+h*0.14)} ${P(-hw*0.94, r0+h*0.56)} ${P(-hw*0.31, r0+h*0.78)} `
+              + `C ${P(-hw*0.15, r0+h*0.90)} ${P(-hw*0.05, r1-h*0.03)} ${P(0,r1)} `
+              + `C ${P(hw*0.05, r1-h*0.03)} ${P(hw*0.15, r0+h*0.90)} ${P(hw*0.31, r0+h*0.78)} `
+              + `C ${P(hw*0.94, r0+h*0.56)} ${P(hw*0.98, r0+h*0.14)} ${P(0,r0)} Z` };
+  },
+  // Boteh / paisley: gota con la punta enroscada hacia un lado.
+  paisley(r0, r1, hw){
+    const h = r1 - r0;
+    return { d:`M ${P(0,r0)} C ${P(-hw, r0+h*0.30)} ${P(-hw*0.92, r1-h*0.12)} ${P(-hw*0.18, r1)} `
+              + `C ${P(hw*0.34, r1+h*0.02)} ${P(hw*0.60, r1-h*0.44)} ${P(hw*0.30, r0+h*0.34)} `
+              + `C ${P(hw*0.16, r0+h*0.16)} ${P(hw*0.10, r0+h*0.05)} ${P(0,r0)} Z` };
+  },
+  // Festón: arco que se repite formando una orla ondulada.
+  escama(r0, r1, hw){
+    return { d:`M ${P(-hw,r0)} Q ${P(0, r1 + (r1-r0)*0.22)} ${P(hw,r0)}`, trazo:true };
+  },
+
+  /* --- vocabulario africano: geometría angular, trazo grueso, alto contraste --- */
+  chevron(r0, r1, hw){
+    return { d:`M ${P(-hw,r0)} L ${P(0,r1)} L ${P(hw,r0)}`, trazo:true };
+  },
+  peine(r0, r1, hw){
+    const h = r1 - r0;
+    let d = `M ${P(-hw,r0)} L ${P(hw,r0)}`;
+    [-0.62, 0, 0.62].forEach(f => { d += ` M ${P(hw*f, r0)} L ${P(hw*f, r0 + h*0.82)}`; });
+    return { d, trazo:true };
+  },
+  escalera(r0, r1, hw){
+    const h = r1 - r0;
+    return { d:`M ${P(-hw,r0)} L ${P(-hw,r0+h*0.48)} L ${P(0,r0+h*0.48)} L ${P(0,r1)} `
+              + `L ${P(hw,r1)} L ${P(hw,r0)} Z` };
+  },
+  equis(r0, r1, hw){
+    return { d:`M ${P(-hw,r0)} L ${P(hw,r1)} M ${P(hw,r0)} L ${P(-hw,r1)}`, trazo:true };
+  },
+  // Rombo con el centro vaciado (fill-rule evenodd).
+  ojo(r0, r1, hw){
+    const mid = (r0 + r1) / 2, h = r1 - r0;
+    return { d:`M ${P(0,r0)} L ${P(-hw,mid)} L ${P(0,r1)} L ${P(hw,mid)} Z `
+              + `M ${P(0,r0+h*0.32)} L ${P(-hw*0.42,mid)} L ${P(0,r1-h*0.32)} L ${P(hw*0.42,mid)} Z`,
+             evenodd:true };
+  },
+  dientes(r0, r1, hw){
+    const h = r1 - r0;
+    let d = `M ${P(-hw,r0)}`;
+    for (let i = 0; i < 3; i++){
+      const a = -hw + (2*hw) * i / 3, b = -hw + (2*hw) * (i + 0.5) / 3, c = -hw + (2*hw) * (i + 1) / 3;
+      d += ` L ${P(a,r0)} L ${P(b,r1)} L ${P(c,r0)}`;
+    }
+    return { d: d + ' Z' };
+  },
+  // Espiral de una sola línea: el motivo africano por excelencia (adinkra).
+  espiralAfr(r0, r1, hw){
+    const mid = (r0 + r1) / 2, [cx, cy] = pt(0, mid);
+    const R = Math.max(Math.min((r1-r0)/2, mid*Math.sin(hw*D2R)) * 0.95, 5);
+    let d = '';
+    for (let i = 0; i <= 40; i++){
+      const t = i / 40, th = t * 2.6 * 2 * Math.PI, rr = R * t;
+      d += (i ? 'L ' : 'M ') + (cx + rr*Math.cos(th)).toFixed(1) + ',' + (cy + rr*Math.sin(th)).toFixed(1) + ' ';
+    }
+    return { d: d.trim(), trazo:true };
+  },
+  // Ojo: círculos concéntricos con pupila, el remate de casi toda cenefa.
+  ojoAfr(r0, r1, hw){
+    const mid = (r0 + r1) / 2, [cx, cy] = pt(0, mid);
+    const R = Math.max(Math.min((r1-r0)/2, mid*Math.sin(hw*D2R)) * 0.95, 5);
+    return { d: circuloPath(cx,cy,R) + ' ' + circuloPath(cx,cy,R*0.62) + ' ' + circuloPath(cx,cy,R*0.26),
+             evenodd:true };
+  },
+  // Greca: meandro angular continuo.
+  greca(r0, r1, hw){
+    const h = r1 - r0;
+    return { d:`M ${P(-hw, r0+h*0.18)} L ${P(-hw, r1-h*0.18)} L ${P(hw*0.15, r1-h*0.18)} `
+              + `L ${P(hw*0.15, r0+h*0.50)} L ${P(-hw*0.42, r0+h*0.50)} L ${P(-hw*0.42, r1-h*0.50)} `
+              + `L ${P(hw*0.58, r1-h*0.50)} L ${P(hw*0.58, r0+h*0.18)} L ${P(hw, r0+h*0.18)}`,
+             trazo:true };
+  },
+  // Lente con pupila.
+  lente(r0, r1, hw){
+    const mid = (r0 + r1) / 2, h = r1 - r0, [cx, cy] = pt(0, mid);
+    return { d:`M ${P(-hw,mid)} Q ${P(0,r1)} ${P(hw,mid)} Q ${P(0,r0)} ${P(-hw,mid)} Z `
+              + circuloPath(cx, cy, Math.min(h*0.16, 7)), evenodd:true };
+  },
+  // Rombo anidado con punto.
+  romboAnidado(r0, r1, hw){
+    const mid = (r0 + r1) / 2, h = r1 - r0, [cx, cy] = pt(0, mid);
+    return { d:`M ${P(0,r0)} L ${P(-hw,mid)} L ${P(0,r1)} L ${P(hw,mid)} Z `
+              + `M ${P(0,r0+h*0.26)} L ${P(-hw*0.48,mid)} L ${P(0,r1-h*0.26)} L ${P(hw*0.48,mid)} Z `
+              + circuloPath(cx, cy, Math.min(h*0.09, 5)), evenodd:true };
+  },
+  // Marcas de conteo: rayas cortas paralelas.
+  conteo(r0, r1, hw){
+    const h = r1 - r0;
+    let d = '';
+    for (let i = 0; i < 4; i++){
+      const a = -hw*0.8 + 1.6*hw*i/3.4;
+      d += ` M ${P(a, r0+h*0.18)} L ${P(a, r1-h*0.18)}`;
+    }
+    return { d: d.trim(), trazo:true };
+  },
+  // Triángulo con rayado interior.
+  triRayado(r0, r1, hw){
+    let d = `M ${P(-hw,r0)} L ${P(hw,r0)} L ${P(0,r1)} Z`;
+    for (let i = 1; i <= 3; i++){
+      const t = i/4, rr = r0 + (r1-r0)*t, w = hw*(1-t);
+      d += ` M ${P(-w,rr)} L ${P(w,rr)}`;
+    }
+    return { d, trazo:true };
+  },
+  // Abanico: semirrosetón de rayos sobre un arco.
+  abanico(r0, r1, hw){
+    let d = `M ${P(-hw,r0)} A ${r0.toFixed(1)},${r0.toFixed(1)} 0 0,1 ${P(hw,r0)}`;
+    for (let i = 0; i <= 6; i++){
+      const a = -hw + 2*hw*i/6;
+      d += ` M ${P(a,r0)} L ${P(a*0.5, r1)}`;
+    }
+    return { d: d.trim(), trazo:true };
+  },
+  // Varios zigzag paralelos.
+  zigzagMulti(r0, r1, hw){
+    const h = r1 - r0;
+    let d = '';
+    [0.2, 0.5, 0.8].forEach(f => {
+      const rr = r0 + h*f, amp = h*0.13;
+      d += ` M ${P(-hw, rr-amp)} L ${P(-hw*0.33, rr+amp)} L ${P(hw*0.33, rr-amp)} L ${P(hw, rr+amp)}`;
+    });
+    return { d: d.trim(), trazo:true };
+  },
+  // Damero de bloques alternos.
+  damero(r0, r1, hw){
+    const h = r1 - r0;
+    let d = '';
+    for (let f = 0; f < 2; f++)
+      for (let c = 0; c < 2; c++){
+        if ((f + c) % 2) continue;
+        const ra = r0 + h*f/2, rb = r0 + h*(f+1)/2;
+        const a = -hw + hw*c, b = -hw + hw*(c+1);
+        d += ` M ${P(a,ra)} L ${P(a,rb)} L ${P(b,rb)} L ${P(b,ra)} Z`;
+      }
+    return { d: d.trim() };
+  },
+
+  /* --- vocabulario de circuito impreso --- */
+  traza(r0, r1, hw){
+    const h = r1 - r0, a = hw * 0.72;
+    return { d:`M ${P(0,r0)} L ${P(0,r0+h*0.28)} L ${P(a,r0+h*0.56)} L ${P(a,r1)}`, trazo:true };
+  },
+  pad(r0, r1, hw){
+    const mid = (r0 + r1) / 2, [cx, cy] = pt(0, mid);
+    const R = Math.max(Math.min((r1-r0)/2, mid*Math.sin(hw*D2R)) * 0.88, 4);
+    return { d: circuloPath(cx, cy, R) + ' ' + circuloPath(cx, cy, Math.max(R*0.42, 1.6)), evenodd:true };
+  },
+  chip(r0, r1, hw){
+    const h = r1 - r0, a = hw * 0.5;
+    return { d:`M ${P(-a,r0+h*0.22)} L ${P(-a,r1-h*0.22)} L ${P(a,r1-h*0.22)} L ${P(a,r0+h*0.22)} Z` };
+  },
+  pines(r0, r1, hw){
+    const h = r1 - r0;
+    let d = '';
+    [-0.72,-0.24,0.24,0.72].forEach(f => {
+      d += ` M ${P(hw*f,r0)} L ${P(hw*f, r0+h*0.26)} M ${P(hw*f, r1-h*0.26)} L ${P(hw*f,r1)}`;
+    });
+    return { d: d.trim(), trazo:true };
+  },
+
+  /* --- vocabulario natural: dendritas, hojas, venas --- */
+  // Brazo de copo de nieve: espina con ramas laterales a 60°.
+  rama(r0, r1){
+    const h = r1 - r0, n = 3;
+    let d = `M ${P(0,r0)} L ${P(0,r1)}`;
+    for (let i = 1; i <= n; i++){
+      const t = r0 + h * i / (n + 1), L = (r1 - t) * 0.62;
+      const [ax, ay] = pt(0, t);
+      d += ` M ${ax},${ay} L ${(ax + L*0.866).toFixed(1)},${(ay - L*0.5).toFixed(1)}`
+         + ` M ${ax},${ay} L ${(ax - L*0.866).toFixed(1)},${(ay - L*0.5).toFixed(1)}`;
+    }
+    return { d, trazo:true };
+  },
+  hoja(r0, r1, hw){
+    const h = r1 - r0;
+    return { d:`M ${P(0,r0)} C ${P(-hw*0.92, r0+h*0.30)} ${P(-hw*0.55, r1-h*0.16)} ${P(0,r1)} `
+              + `C ${P(hw*0.55, r1-h*0.16)} ${P(hw*0.92, r0+h*0.30)} ${P(0,r0)} Z` };
+  },
+  vena(r0, r1, hw){
+    const h = r1 - r0;
+    let d = `M ${P(0,r0)} L ${P(0,r1)}`;
+    for (let i = 1; i <= 3; i++){
+      const t = r0 + h * i / 4.6;
+      d += ` M ${P(0,t)} L ${P(-hw*0.55, t + h*0.24)} M ${P(0,t)} L ${P(hw*0.55, t + h*0.24)}`;
+    }
+    return { d, trazo:true };
+  },
+
+  /* --- vocabulario mecánico --- */
+  diente(r0, r1, hw){
+    return { d:`M ${P(-hw*0.58,r0)} L ${P(-hw*0.34,r1)} L ${P(hw*0.34,r1)} L ${P(hw*0.58,r0)} Z` };
+  },
+  tuerca(r0, r1, hw){
+    const mid = (r0 + r1) / 2, [cx, cy] = pt(0, mid);
+    const R = Math.max(Math.min((r1-r0)/2, mid*Math.sin(hw*D2R)) * 0.95, 5);
+    let d = '';
+    for (let i = 0; i < 6; i++){
+      const a = (i * 60 - 90) * D2R;
+      d += (i ? 'L ' : 'M ') + (cx + R*Math.cos(a)).toFixed(1) + ',' + (cy + R*Math.sin(a)).toFixed(1) + ' ';
+    }
+    return { d: d + 'Z ' + circuloPath(cx, cy, Math.max(R*0.44, 2)), evenodd:true };
+  },
+  panel(r0, r1, hw){
+    const h = r1 - r0, a = hw * 0.82;
+    return { d:`M ${P(-a,r0)} L ${P(-a,r1)} L ${P(a*0.45,r1)} L ${P(a,r1-h*0.32)} L ${P(a,r0)} Z` };
+  },
+  antena(r0, r1, hw){
+    const h = r1 - r0, [cx, cy] = pt(0, r1 - h*0.13);
+    return { d:`M ${P(0,r0)} L ${P(0, r1-h*0.13)} ` + circuloPath(cx, cy, Math.max(h*0.12, 2.5)), trazo:true };
+  },
+
+  /* --- vocabulario de microchip (die / floorplan) ---
+     Un die real tiene: anillo de pads de I/O en el perímetro, anillos de
+     potencia VDD/VSS, macros duros (SRAM) con textura de líneas paralelas,
+     filas de celdas estándar y rutado Manhattan (solo tramos rectos y
+     giros de 90°) con vías en cada cambio de capa.                        */
+  padIO(r0, r1, hw){
+    const h = r1 - r0, a = hw * 0.62, c = r0 + h * 0.36;
+    return { d:`M ${P(-a,c)} L ${P(-a,r1)} L ${P(a,r1)} L ${P(a,c)} Z `
+              + `M ${P(-a*0.24,r0)} L ${P(-a*0.24,c)} L ${P(a*0.24,c)} L ${P(a*0.24,r0)} Z` };
+  },
+  manhattan(r0, r1, hw){
+    const h = r1 - r0, ra = r0 + h * 0.42, a = hw * 0.66;
+    return { d:`M ${P(0,r0)} L ${P(0,ra)} `
+              + `A ${ra.toFixed(1)},${ra.toFixed(1)} 0 0,1 ${P(a,ra)} L ${P(a,r1)}`, trazo:true };
+  },
+  // Macro de memoria: haz de líneas paralelas encerrado entre dos arcos.
+  arrayMem(r0, r1, hw){
+    let d = '';
+    for (let i = 0; i < 7; i++){
+      const t = -hw + 2 * hw * (i + 0.5) / 7;
+      d += ` M ${P(t,r0)} L ${P(t,r1)}`;
+    }
+    d += ` M ${P(-hw,r0)} A ${r0.toFixed(1)},${r0.toFixed(1)} 0 0,1 ${P(hw,r0)}`
+       + ` M ${P(-hw,r1)} A ${r1.toFixed(1)},${r1.toFixed(1)} 0 0,1 ${P(hw,r1)}`;
+    return { d: d.trim(), trazo:true };
+  },
+  // Filas de celdas estándar abutadas.
+  celdas(r0, r1, hw){
+    const h = r1 - r0;
+    let d = '';
+    [0.05, 0.39, 0.73].forEach(f => {
+      const b0 = r0 + h*f, b1 = r0 + h*(f + 0.19);
+      d += ` M ${P(-hw*0.92,b0)} L ${P(-hw*0.92,b1)} L ${P(hw*0.92,b1)} L ${P(hw*0.92,b0)} Z`;
+    });
+    return { d: d.trim() };
+  },
+  viaCuadrada(r0, r1, hw){
+    const mid = (r0 + r1) / 2, [cx, cy] = pt(0, mid);
+    const s = Math.max(Math.min((r1-r0)*0.28, mid*Math.sin(hw*D2R)*0.7, 11), 2.5);
+    return { d:`M ${(cx-s).toFixed(1)},${(cy-s).toFixed(1)} L ${(cx+s).toFixed(1)},${(cy-s).toFixed(1)} `
+              + `L ${(cx+s).toFixed(1)},${(cy+s).toFixed(1)} L ${(cx-s).toFixed(1)},${(cy+s).toFixed(1)} Z` };
+  },
+
+  /* --- HUD de instrumento: lo que en las referencias rodea el disco central ---
+     Arcos partidos, bloques sobre el arco, escalas de marcas, cuñas y flechas.
+     Es lo que hace que una placa se lea como instrumento y no como retícula, y
+     lo que le faltaba al estilo: sin esto, todos los anillos eran variaciones
+     de lo mismo. Casi todo es RELLENO, no trazo, para que se pueda pintar. */
+  // Arco grueso partido en tramos desiguales.
+  arcoSegmentado(r0, r1, hw){
+    const h = r1 - r0;
+    return { d: sectorAnillo(r0 + h*0.28, r0 + h*0.60, -hw*0.94, hw*0.26) + ' '
+              + sectorAnillo(r0 + h*0.28, r0 + h*0.60, hw*0.44, hw*0.88) + ' '
+              + sectorAnillo(r0 + h*0.72, r0 + h*0.88, -hw*0.66, hw*0.60) };
+  },
+  // Arco con bloques encima, de largo desigual. El rasgo más repetido de las
+  // referencias de HUD.
+  arcoBloques(r0, r1, hw){
+    const h = r1 - r0, largos = [0.34, 0.72, 0.46, 0.88, 0.38];
+    let d = sectorAnillo(r0 + h*0.08, r0 + h*0.24, -hw*0.94, hw*0.94);
+    largos.forEach((L, i) => {
+      const a0 = -hw*0.90 + 1.80*hw*(i + 0.14) / largos.length;
+      const a1 = -hw*0.90 + 1.80*hw*(i + 0.82) / largos.length;
+      d += ' ' + sectorAnillo(r0 + h*0.34, r0 + h*(0.34 + 0.56*L), a0, a1);
+    });
+    return { d };
+  },
+  // Escala circular: marcas largas y cortas alternadas, como una regla curvada.
+  escalaRadial(r0, r1, hw){
+    // Cinco marcas por sector, no nueve: multiplicadas por las repeticiones del
+    // anillo, nueve daban doscientas marcas y el anillo dejaba de leerse como
+    // escala para leerse como un peine negro.
+    const h = r1 - r0, n = 5;
+    let d = '';
+    for (let i = 0; i < n; i++){
+      const a = -hw*0.92 + 1.84*hw*i/(n - 1), larga = i % 3 === 0;
+      const w = hw * (larga ? 0.055 : 0.028);
+      d += ' ' + sectorAnillo(r0 + h*0.16, r0 + h*(larga ? 0.88 : 0.56), a - w, a + w);
+    }
+    return { d: d.trim() };
+  },
+  // Anillo de datos: bloques de largo variable, un código de barras curvado.
+  anilloDatos(r0, r1, hw){
+    const h = r1 - r0;
+    let d = '', a = -hw*0.94;
+    for (let i = 0; i < 14 && a < hw*0.88; i++){
+      const w = hw * (0.06 + 0.10 * ((i * 7 % 5) / 5));
+      d += ' ' + sectorAnillo(r0 + h*0.30, r0 + h*0.74, a, Math.min(a + w, hw*0.94));
+      a += w + hw*0.07;
+    }
+    return { d: d.trim() };
+  },
+  // Cuña de retícula: el sector fino que enmarca una zona del panel.
+  cunaHud(r0, r1, hw){
+    const h = r1 - r0;
+    return { d:`M ${P(-hw*0.88, r0+h*0.10)} L ${P(-hw*0.60, r1)} L ${P(hw*0.60, r1)} `
+              + `L ${P(hw*0.88, r0+h*0.10)} Z`, trazo:true };
+  },
+  // Los triángulos de sentido que aparecen sueltos sobre el fondo.
+  flechaTicks(r0, r1, hw){
+    const h = r1 - r0;
+    let d = '';
+    [0, 1, 2].forEach(i => {
+      const b = r0 + h*(0.14 + i*0.27), s = 1 - i*0.20;
+      d += ` M ${P(0, b + h*0.22*s)} L ${P(-hw*0.34*s, b)} L ${P(hw*0.34*s, b)} Z`;
+    });
+    return { d: d.trim() };
+  },
+
+  /* --- rutado: pistas, vías y pads --- */
+  // Haz de pistas en diagonal a 45°, que es como se rutea de verdad.
+  busDiagonal(r0, r1, hw){
+    const h = r1 - r0;
+    let d = '';
+    for (let i = 0; i < 4; i++){
+      const a = -hw*0.74 + hw*0.46*i, q = r0 + h*(0.22 + i*0.16);
+      d += ` M ${P(a, r0)} L ${P(a, q)} L ${P(a + hw*0.52, q + h*0.20)} L ${P(a + hw*0.52, r1)}`;
+    }
+    return { d: d.trim(), trazo:true };
+  },
+  // Pista con dos quiebres que muere en su vía.
+  trazaVia(r0, r1, hw){
+    const h = r1 - r0, rr = r0 + h*0.74, [cx, cy] = pt(hw*0.42, rr);
+    const R = Math.max(Math.min(h*0.13, 7), 2.4);
+    return { d:`M ${P(-hw*0.44, r0)} L ${P(-hw*0.44, r0+h*0.24)} L ${P(0, r0+h*0.46)} `
+              + `L ${P(hw*0.42, r0+h*0.46)} L ${P(hw*0.42, rr - R)} `
+              + circuloPath(cx, cy, R), trazo:true };
+  },
+  // Vía redonda con su taladro.
+  viaRedonda(r0, r1, hw){
+    const mid = (r0 + r1) / 2, [cx, cy] = pt(0, mid);
+    const R = Math.max(Math.min((r1-r0)*0.30, mid*Math.sin(hw*D2R)*0.8, 12), 3);
+    return { d: circuloPath(cx, cy, R) + ' ' + circuloPath(cx, cy, R*0.42), evenodd:true };
+  },
+  // Pad de terminación: el punto gordo en el que muere una pista.
+  padTermina(r0, r1, hw){
+    const h = r1 - r0, [cx, cy] = pt(0, r0 + h*0.74);
+    const R = Math.max(Math.min(h*0.22, 12), 3);
+    return { d:`M ${P(-hw*0.10, r0)} L ${P(-hw*0.10, r0+h*0.64)} L ${P(hw*0.10, r0+h*0.64)} `
+              + `L ${P(hw*0.10, r0)} Z ` + circuloPath(cx, cy, R) };
+  },
+  // Matriz de puntos: la retícula densa que rellena los huecos de la placa.
+  matrizPuntos(r0, r1, hw){
+    const h = r1 - r0;
+    let d = '';
+    for (let f = 0; f < 4; f++)
+      for (let c = 0; c < 5; c++){
+        const [cx, cy] = pt(-hw*0.72 + hw*1.44*c/4, r0 + h*(0.18 + 0.64*f/3));
+        d += circuloPath(cx, cy, Math.max(Math.min(h*0.05, 3.4), 1.2)) + ' ';
+      }
+    return { d: d.trim() };
+  },
+  // Conector: el bloque macizo con sus taladros.
+  conector(r0, r1, hw){
+    const h = r1 - r0;
+    return { d:`M ${P(-hw*0.36, r0+h*0.06)} L ${P(-hw*0.36, r1-h*0.06)} `
+              + `L ${P(hw*0.36, r1-h*0.06)} L ${P(hw*0.36, r0+h*0.06)} Z `
+              + circuloPath(...pt(0, r0+h*0.30), Math.min(h*0.09, 6)) + ' '
+              + circuloPath(...pt(0, r0+h*0.70), Math.min(h*0.09, 6)), evenodd:true };
+  },
+
+  /* --- más vocabulario natural: hojas, frondas y fractales --- */
+  hojaLobulada(r0, r1, hw){
+    const h = r1 - r0;
+    return { d:`M ${P(0,r0)} `
+      + `C ${P(-hw*0.5,r0+h*0.10)} ${P(-hw,r0+h*0.22)} ${P(-hw*0.72,r0+h*0.38)} `
+      + `C ${P(-hw*1.02,r0+h*0.50)} ${P(-hw*0.84,r0+h*0.68)} ${P(-hw*0.44,r0+h*0.72)} `
+      + `C ${P(-hw*0.58,r0+h*0.88)} ${P(-hw*0.20,r1)} ${P(0,r1)} `
+      + `C ${P(hw*0.20,r1)} ${P(hw*0.58,r0+h*0.88)} ${P(hw*0.44,r0+h*0.72)} `
+      + `C ${P(hw*0.84,r0+h*0.68)} ${P(hw*1.02,r0+h*0.50)} ${P(hw*0.72,r0+h*0.38)} `
+      + `C ${P(hw,r0+h*0.22)} ${P(hw*0.5,r0+h*0.10)} ${P(0,r0)} Z` };
+  },
+  // Fronda pinnada: raquis con hojuelas enfrentadas que decrecen hacia la punta.
+  helecho(r0, r1, hw){
+    const h = r1 - r0, n = 5;
+    let d = `M ${P(0,r0)} L ${P(0,r1)}`;
+    for (let i = 1; i <= n; i++){
+      const t = r0 + h * i / (n + 1), L = (1 - i / (n + 1.2));
+      const w = hw * L, alto = h * 0.13 * (0.5 + L);
+      d += ` M ${P(0,t)} Q ${P(-w*0.8, t + alto*0.4)} ${P(-w, t + alto)}`
+         + ` Q ${P(-w*0.35, t + alto*0.35)} ${P(0,t)}`
+         + ` M ${P(0,t)} Q ${P(w*0.8, t + alto*0.4)} ${P(w, t + alto)}`
+         + ` Q ${P(w*0.35, t + alto*0.35)} ${P(0,t)}`;
+    }
+    return { d, trazo:true };
+  },
+  // Borde de copo de Koch: la fractal clásica, dos niveles de recursión.
+  koch(r0, r1, hw){
+    const [x0, y0] = pt(-hw, r0), [x1, y1] = pt(hw, r0);
+    const pts = kochPuntos(x0, y0, x1, y1, 2);
+    return { d: `M ${x0.toFixed(1)},${y0.toFixed(1)} `
+                + pts.map(p => `L ${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' '), trazo:true };
+  },
+  // Espiral logarítmica: la curva del nautilus y de las cabezuelas.
+  espiral(r0, r1, hw){
+    let d = '';
+    for (let i = 0; i <= 22; i++){
+      const t = i / 22;
+      d += (i ? 'L ' : 'M ') + P(-hw + 2*hw*t*t, r0 + (r1 - r0) * t) + ' ';
+    }
+    return { d: d.trim(), trazo:true };
+  },
+
+  /* --- agua --- */
+  // Rizos concéntricos, como los que deja una gota al caer.
+  onda(r0, r1, hw){
+    let d = '';
+    [0.18, 0.5, 0.82].forEach(f => {
+      const rr = r0 + (r1 - r0) * f;
+      d += ` M ${P(-hw,rr)} A ${rr.toFixed(1)},${rr.toFixed(1)} 0 0,1 ${P(hw,rr)}`;
+    });
+    return { d: d.trim(), trazo:true };
+  },
+  // Cresta con voluta enroscada, al modo de la ola de Hokusai.
+  ola(r0, r1, hw){
+    const h = r1 - r0;
+    return { d:`M ${P(-hw,r0)} C ${P(-hw*0.62, r0+h*0.78)} ${P(hw*0.08, r1)} ${P(hw*0.52, r1-h*0.16)} `
+              + `C ${P(hw*0.74, r1-h*0.52)} ${P(hw*0.40, r0+h*0.26)} ${P(hw*0.08, r0+h*0.44)} `
+              + `C ${P(hw*0.32, r0+h*0.20)} ${P(hw*0.70, r0+h*0.07)} ${P(hw,r0)} Z` };
+  },
+  gotaAgua(r0, r1, hw){
+    const h = r1 - r0;
+    return { d:`M ${P(0,r1)} C ${P(-hw*0.52, r0+h*0.60)} ${P(-hw*0.66, r0+h*0.18)} ${P(0,r0)} `
+              + `C ${P(hw*0.66, r0+h*0.18)} ${P(hw*0.52, r0+h*0.60)} ${P(0,r1)} Z` };
+  },
+  burbujas(r0, r1, hw){
+    const h = r1 - r0;
+    let d = '';
+    [[0.24, 0.34, 0.30], [0.60, -0.38, 0.22], [0.85, 0.26, 0.14]].forEach(([f, g, s]) => {
+      const [cx, cy] = pt(hw * g, r0 + h * f);
+      d += circuloPath(cx, cy, Math.max(h * s * 0.5, 2)) + ' ';
+    });
+    return { d: d.trim(), trazo:true };
+  },
+
+  /* --- viento --- */
+  // Voluta: la espiral abierta con la que se dibuja una racha de aire.
+  remolino(r0, r1, hw){
+    let d = '';
+    for (let i = 0; i <= 20; i++){
+      const t = i / 20;
+      d += (i ? 'L ' : 'M ')
+         + P(-hw * 0.9 + hw * 2.4 * t * t, r0 + (r1 - r0) * Math.sin(t * Math.PI * 0.9)) + ' ';
+    }
+    return { d: d.trim(), trazo:true };
+  },
+  // Líneas de corriente paralelas.
+  racha(r0, r1, hw){
+    const h = r1 - r0;
+    let d = '';
+    [0.22, 0.5, 0.78].forEach((f, i) => {
+      const rr = r0 + h * f;
+      d += ` M ${P(-hw*0.95, rr)} Q ${P(0, rr + h*0.16)} ${P(hw*(0.55 + i*0.16), rr - h*0.05)}`;
+    });
+    return { d: d.trim(), trazo:true };
+  },
+
+  /* --- naturaleza RELLENA ---
+     Las mismas reglas de crecimiento de arriba, pero en figuras cerradas. El
+     estilo tenía nueve motivos de trazo suelto contra ocho de relleno: en una
+     lámina para colorear eso significa que media mandala no se puede pintar.
+     Estos motivos existen para que sí se pueda. */
+  // Fronda de helecho en silueta: hojuelas que decrecen hacia la punta.
+  fronda(r0, r1, hw){
+    const h = r1 - r0, n = 5;
+    let d = `M ${P(0,r0)}`;
+    for (let i = 0; i < n; i++){                       // sube lobulando por la izquierda
+      const a = r0 + h*i/n, b = r0 + h*(i+1)/n, L = 1 - i/(n + 0.7);
+      d += ` Q ${P(-hw*L, a + (b-a)*0.20)} ${P(-hw*L*0.34, b)}`;
+    }
+    d += ` L ${P(0,r1)}`;
+    for (let i = n - 1; i >= 0; i--){                  // baja por la derecha
+      const a = r0 + h*i/n, b = r0 + h*(i+1)/n, L = 1 - i/(n + 0.7);
+      d += ` Q ${P(hw*L, a + (b-a)*0.80)} ${P(hw*L*0.34, a)}`;
+    }
+    return { d: d + ' Z' };
+  },
+  // Dendrita de escarcha: brazo con ramas que repiten el brazo. Es la fractal
+  // del hielo, y no se construye sobre un triángulo.
+  dendrita(r0, r1, hw){
+    const h = r1 - r0, w = hw*0.11;
+    let d = `M ${P(-w, r0)} L ${P(-w*0.45, r1)} L ${P(w*0.45, r1)} L ${P(w, r0)} Z`;
+    [0.20, 0.44, 0.68].forEach((f, i) => {
+      const rr = r0 + h*f, L = hw*(0.88 - i*0.22), alto = h*0.15;
+      [-1, 1].forEach(s => {
+        d += ` M ${P(s*w*0.6, rr)} L ${P(s*L, rr + alto*0.95)} `
+           + `L ${P(s*L*0.70, rr + alto*1.22)} L ${P(s*w*0.6, rr + alto*0.40)} Z`;
+        d += ` M ${P(s*L*0.52, rr + alto*0.55)} L ${P(s*L*0.80, rr + alto*1.55)} `
+           + `L ${P(s*L*0.60, rr + alto*1.66)} L ${P(s*L*0.42, rr + alto*0.74)} Z`;
+      });
+    });
+    return { d: d.trim() };
+  },
+  // Rama con hojuelas rellenas.
+  ramaHojas(r0, r1, hw){
+    const h = r1 - r0, w = hw*0.09;
+    let d = `M ${P(-w, r0)} L ${P(-w*0.4, r1)} L ${P(w*0.4, r1)} L ${P(w, r0)} Z`;
+    [0.18, 0.44, 0.70].forEach((f, i) => {
+      const rr = r0 + h*f, L = hw*(0.92 - i*0.20), alto = h*0.20;
+      [-1, 1].forEach(s => {
+        d += ` M ${P(0, rr)} Q ${P(s*L, rr + alto*0.12)} ${P(s*L*0.70, rr + alto)} `
+           + `Q ${P(s*L*0.18, rr + alto*0.48)} ${P(0, rr)} Z`;
+      });
+    });
+    return { d: d.trim() };
+  },
+  // Escama de piña: lóbulo con su nervadura vaciada. Se apilan como en la piña.
+  escamaPina(r0, r1, hw){
+    const h = r1 - r0;
+    return { d:`M ${P(-hw*0.94, r0)} Q ${P(-hw*0.88, r0+h*0.70)} ${P(0, r1)} `
+              + `Q ${P(hw*0.88, r0+h*0.70)} ${P(hw*0.94, r0)} Z `
+              + `M ${P(-hw*0.44, r0+h*0.14)} Q ${P(-hw*0.40, r0+h*0.58)} ${P(0, r0+h*0.76)} `
+              + `Q ${P(hw*0.40, r0+h*0.58)} ${P(hw*0.44, r0+h*0.14)} Z`, evenodd:true };
+  },
+  // Semillero: el parche de semillas colocadas con el ángulo áureo.
+  semillero(r0, r1, hw){
+    const h = r1 - r0, n = 14;
+    let d = '';
+    for (let i = 0; i < n; i++){
+      const t = Math.sqrt((i + 0.5) / n), a = ((i * 137.507) % 360) - 180;
+      const [cx, cy] = pt(hw*0.88*Math.sin(a*D2R)*t, r0 + h*(0.12 + 0.76*t));
+      d += circuloPath(cx, cy, Math.max(h*0.055*(0.7 + t), 1.4)) + ' ';
+    }
+    return { d: d.trim() };
+  },
+  // Nautilo: la espiral logarítmica cerrada, con sus cámaras vaciadas.
+  nautilo(r0, r1, hw){
+    const mid = (r0 + r1) / 2, h = r1 - r0, [cx, cy] = pt(0, mid);
+    const R = Math.max(Math.min(h*0.46, mid*Math.sin(hw*D2R)*0.90), 9);
+    const A = 2.4*Math.PI, b = Math.log(3.4) / (2*Math.PI), pasos = 40;
+    const f = a => {
+      const rr = R*Math.exp(b*(a - A));
+      return `${(cx + rr*Math.cos(a)).toFixed(1)},${(cy + rr*Math.sin(a)).toFixed(1)}`;
+    };
+    let d = `M ${f(0)}`;
+    for (let i = 1; i <= pasos; i++) d += ` L ${f(A*i/pasos)}`;
+    for (let i = pasos; i >= 0; i--) d += ` L ${f(A*i/pasos - 2*Math.PI)}`;
+    d += ' Z';
+    for (let i = 1; i < 5; i++){                      // tabiques entre cámaras
+      const a = A*i/5, e = 0.035;
+      d += ` M ${f(a - e)} L ${f(a + e)} L ${f(a + e - 2*Math.PI)} L ${f(a - e - 2*Math.PI)} Z`;
+    }
+    return { d, evenodd:true };
+  },
+  // Cúmulo de burbujas relleno, cada una con su reflejo vaciado.
+  cumulo(r0, r1, hw){
+    const h = r1 - r0;
+    let d = '';
+    [[0.28, 0, 0.34], [0.60, -0.44, 0.24], [0.64, 0.44, 0.22], [0.88, 0.04, 0.16]]
+      .forEach(([f, gg, s]) => {
+        const [cx, cy] = pt(hw*gg, r0 + h*f), R = Math.max(h*s*0.62, 2.5);
+        d += circuloPath(cx, cy, R) + ' ' + circuloPath(cx - R*0.32, cy - R*0.32, R*0.22) + ' ';
+      });
+    return { d: d.trim(), evenodd:true };
+  },
+  // Cinta de agua: la onda con cuerpo, no la línea suelta.
+  ondaBanda(r0, r1, hw){
+    const h = r1 - r0;
+    let d = '';
+    [0.14, 0.54].forEach(f => {
+      const a = r0 + h*f, b = a + h*0.24;
+      d += ` M ${P(-hw, a)} Q ${P(-hw*0.5, a + h*0.15)} ${P(0, a)} `
+         + `Q ${P(hw*0.5, a - h*0.15)} ${P(hw, a)} L ${P(hw, b)} `
+         + `Q ${P(hw*0.5, b - h*0.15)} ${P(0, b)} Q ${P(-hw*0.5, b + h*0.15)} ${P(-hw, b)} Z`;
+    });
+    return { d: d.trim() };
+  },
+  // Racha de viento con cuerpo: el trazo ancho que se afila.
+  rachaAncha(r0, r1, hw){
+    const h = r1 - r0;
+    let d = '';
+    [[0.16, 1], [0.48, -1], [0.78, 1]].forEach(([f, s], i) => {
+      const rr = r0 + h*f, gr = h*0.11*(1 - i*0.16);
+      d += ` M ${P(-hw*0.96, rr)} Q ${P(0, rr + h*0.16*s)} ${P(hw*0.84, rr)} `
+         + `Q ${P(0, rr + h*0.16*s + gr)} ${P(-hw*0.96, rr + gr)} Z`;
+    });
+    return { d: d.trim() };
+  },
+  // Remolino con cuerpo: la voluta convertida en cinta.
+  remolinoAncho(r0, r1, hw){
+    const h = r1 - r0, n = 16;
+    const ang = t => -hw*0.92 + hw*2.4*t*t;
+    const rad = t => r0 + h*Math.sin(t*Math.PI*0.92);
+    let d = `M ${P(ang(0), rad(0))}`;
+    for (let i = 1; i <= n; i++) d += ` L ${P(ang(i/n), rad(i/n))}`;
+    for (let i = n; i >= 0; i--){
+      const t = i/n;
+      d += ` L ${P(ang(t) + hw*0.05*(1 - t), rad(t) - h*0.17*(1 - t*0.65))}`;
+    }
+    return { d: d + ' Z' };
+  },
+
+  /* --- vocabulario mecha: robots de anime de los noventa --- */
+  // Cresta en V de la frente: el rasgo más reconocible del género.
+  vfin(r0, r1, hw){
+    const h = r1 - r0;
+    return { d:`M ${P(0,r0)} L ${P(-hw*0.88,r1)} L ${P(-hw*0.46,r1)} L ${P(0, r0+h*0.46)} `
+              + `L ${P(hw*0.46,r1)} L ${P(hw*0.88,r1)} Z` };
+  },
+  // Cabeza de frente: visor ancho y mentón estrecho.
+  visor(r0, r1, hw){
+    const h = r1 - r0;
+    return { d:`M ${P(-hw*0.82, r0+h*0.52)} L ${P(-hw*0.48, r1)} L ${P(hw*0.48, r1)} `
+              + `L ${P(hw*0.82, r0+h*0.52)} L ${P(hw*0.34, r0)} L ${P(-hw*0.34, r0)} Z` };
+  },
+  // El ojo único tipo Zaku.
+  monoojo(r0, r1, hw){
+    const mid = (r0 + r1) / 2, h = r1 - r0;
+    return { d:`M ${P(-hw*0.72, mid)} L ${P(-hw*0.26, mid+h*0.24)} L ${P(hw*0.26, mid+h*0.24)} `
+              + `L ${P(hw*0.72, mid)} L ${P(hw*0.26, mid-h*0.24)} L ${P(-hw*0.26, mid-h*0.24)} Z` };
+  },
+  // Placa de hombro con bisel.
+  hombrera(r0, r1, hw){
+    const h = r1 - r0;
+    return { d:`M ${P(-hw*0.92,r0)} L ${P(-hw*0.92, r1-h*0.3)} L ${P(-hw*0.52,r1)} `
+              + `L ${P(hw*0.52,r1)} L ${P(hw*0.92, r1-h*0.3)} L ${P(hw*0.92,r0)} Z` };
+  },
+  // Tobera de propulsor: cono con boca hueca.
+  thruster(r0, r1, hw){
+    const h = r1 - r0;
+    return { d:`M ${P(-hw*0.34,r0)} L ${P(-hw*0.92,r1)} L ${P(hw*0.92,r1)} L ${P(hw*0.34,r0)} Z `
+              + `M ${P(-hw*0.5, r0+h*0.5)} L ${P(-hw*0.72,r1)} L ${P(hw*0.72,r1)} L ${P(hw*0.5, r0+h*0.5)} Z`,
+             evenodd:true };
+  },
+  // Vernier: rejilla de aletas de ventilación.
+  rejilla(r0, r1, hw){
+    const h = r1 - r0;
+    let d = '';
+    [0.10, 0.38, 0.66].forEach(f => {
+      d += ` M ${P(-hw*0.78, r0+h*f)} L ${P(-hw*0.78, r0+h*(f+0.17))} `
+         + `L ${P(hw*0.78, r0+h*(f+0.17))} L ${P(hw*0.78, r0+h*f)} Z`;
+    });
+    return { d: d.trim() };
+  },
+  // Cilindro hidráulico con sus anillos.
+  piston(r0, r1, hw){
+    const h = r1 - r0;
+    let d = `M ${P(-hw*0.22,r0)} L ${P(-hw*0.22,r1)} L ${P(hw*0.22,r1)} L ${P(hw*0.22,r0)} Z`;
+    [0.26, 0.52, 0.78].forEach(f => {
+      d += ` M ${P(-hw*0.52, r0+h*f)} L ${P(-hw*0.52, r0+h*(f+0.09))} `
+         + `L ${P(hw*0.52, r0+h*(f+0.09))} L ${P(hw*0.52, r0+h*f)} Z`;
+    });
+    return { d };
+  },
+  // Binder / ala de mochila, tipo Wing.
+  ala(r0, r1, hw){
+    const h = r1 - r0;
+    return { d:`M ${P(0,r0)} L ${P(-hw*0.36, r0+h*0.16)} L ${P(-hw*0.98, r1-h*0.26)} `
+              + `L ${P(-hw*0.56, r1)} L ${P(0, r1-h*0.20)} L ${P(hw*0.56, r1)} `
+              + `L ${P(hw*0.98, r1-h*0.26)} L ${P(hw*0.36, r0+h*0.16)} Z` };
+  },
+  // Cañón de haz: tubo con anillos de refuerzo y boca.
+  canon(r0, r1, hw){
+    const h = r1 - r0;
+    let d = `M ${P(-hw*0.28,r0)} L ${P(-hw*0.28,r1)} L ${P(hw*0.28,r1)} L ${P(hw*0.28,r0)} Z`;
+    [0.16, 0.42, 0.68].forEach(f => {
+      d += ` M ${P(-hw*0.62, r0+h*f)} L ${P(-hw*0.62, r0+h*(f+0.1))} `
+         + `L ${P(hw*0.62, r0+h*(f+0.1))} L ${P(hw*0.62, r0+h*f)} Z`;
+    });
+    d += ` M ${P(-hw*0.46, r1-h*0.1)} L ${P(-hw*0.46, r1)} L ${P(hw*0.46, r1)} L ${P(hw*0.46, r1-h*0.1)} Z`;
+    return { d };
+  },
+  // Manguera segmentada: los tubos expuestos del Zaku y del EVA.
+  cable(r0, r1, hw){
+    const h = r1 - r0, n = 5;
+    let d = '';
+    for (let i = 0; i < n; i++){
+      const a = r0 + h*(i + 0.08)/n, b = r0 + h*(i + 0.84)/n;
+      const w = hw * (0.30 + 0.12 * Math.sin(i * 1.7));
+      d += ` M ${P(-w,a)} L ${P(-w,b)} L ${P(w,b)} L ${P(w,a)} Z`;
+    }
+    return { d: d.trim() };
+  },
+  // Articulación de rótula con horquilla.
+  articulacion(r0, r1, hw){
+    const mid = (r0 + r1) / 2, h = r1 - r0, [cx, cy] = pt(0, mid);
+    const R = Math.max(Math.min(h * 0.3, mid * Math.sin(hw * D2R) * 0.85), 4);
+    return { d: circuloPath(cx, cy, R)
+              + ` M ${P(-hw*0.46,r0)} L ${P(-hw*0.46,mid)} L ${P(hw*0.46,mid)} L ${P(hw*0.46,r0)} Z`
+              + ` M ${P(-hw*0.46,r1)} L ${P(-hw*0.46,mid)} L ${P(hw*0.46,mid)} L ${P(hw*0.46,r1)} Z`,
+             evenodd:true };
+  },
+  // Garra manipuladora de tres dedos.
+  garra(r0, r1, hw){
+    const h = r1 - r0;
+    let d = `M ${P(-hw*0.48,r0)} L ${P(-hw*0.48, r0+h*0.34)} L ${P(hw*0.48, r0+h*0.34)} L ${P(hw*0.48,r0)} Z`;
+    [-0.68, 0, 0.68].forEach(f => {
+      d += ` M ${P(hw*f - hw*0.13, r0+h*0.34)} L ${P(hw*f - hw*0.17, r1)} `
+         + `L ${P(hw*f + hw*0.17, r1)} L ${P(hw*f + hw*0.13, r0+h*0.34)} Z`;
+    });
+    return { d };
+  },
+  // Sensor / cámara con iris.
+  sensor(r0, r1, hw){
+    const mid = (r0 + r1) / 2, [cx, cy] = pt(0, mid);
+    const R = Math.max(Math.min((r1-r0)/2, mid*Math.sin(hw*D2R)) * 0.9, 5);
+    return { d: circuloPath(cx,cy,R) + ' ' + circuloPath(cx,cy,R*0.58) + ' ' + circuloPath(cx,cy,R*0.22),
+             evenodd:true };
+  },
+  // Placa de blindaje con remaches.
+  remaches(r0, r1, hw){
+    const h = r1 - r0;
+    let d = `M ${P(-hw*0.88,r0)} L ${P(-hw*0.88,r1)} L ${P(hw*0.88,r1)} L ${P(hw*0.88,r0)} Z`;
+    [[-0.58, 0.2], [0.58, 0.2], [-0.58, 0.78], [0.58, 0.78]].forEach(([a, f]) => {
+      const [cx, cy] = pt(hw*a, r0 + h*f);
+      d += ' ' + circuloPath(cx, cy, Math.min(h*0.09, 5));
+    });
+    return { d, evenodd:true };
+  },
+  // Aspa de turbina curvada, como las de un rotor de compresor.
+  turbina(r0, r1, hw){
+    const h = r1 - r0;
+    return { d:`M ${P(-hw*0.80, r0)} C ${P(-hw*0.52, r0+h*0.48)} ${P(-hw*0.12, r1-h*0.22)} ${P(hw*0.04, r1)} `
+              + `L ${P(hw*0.62, r1)} C ${P(hw*0.42, r1-h*0.42)} ${P(hw*0.14, r0+h*0.42)} ${P(hw*0.06, r0)} Z` };
+  },
+  // Destello de impacto: la estrella de los golpes del manga.
+  destello(r0, r1, hw){
+    const mid = (r0 + r1) / 2, h = r1 - r0;
+    let d = '';
+    for (let i = 0; i < 8; i++){
+      d += (i ? 'L ' : 'M ') + P(-hw + 2*hw*i/7, i % 2 ? mid + h*0.46 : mid - h*0.12) + ' ';
+    }
+    return { d: d.trim() + ' Z' };
+  },
+  // Líneas de velocidad.
+  velocidad(r0, r1, hw){
+    const h = r1 - r0;
+    let d = '';
+    [-0.62, -0.21, 0.21, 0.62].forEach((f, i) => {
+      d += ` M ${P(hw*f, r0 + h*0.08*i)} L ${P(hw*f, r1 - h*0.08*(3-i))}`;
+    });
+    return { d: d.trim(), trazo:true };
+  },
+  // Placa de blindaje escalonada con esquinas biseladas: la forma base del
+  // panelado de un mecha ochentero.
+  blindaje(r0, r1, hw){
+    const h = r1 - r0, b = hw * 0.22;
+    return { d:`M ${P(-hw+b, r0)} L ${P(-hw, r0 + h*0.22)} L ${P(-hw, r1 - h*0.34)} `
+              + `L ${P(-hw*0.62, r1)} L ${P(hw*0.62, r1)} L ${P(hw, r1 - h*0.34)} `
+              + `L ${P(hw, r0 + h*0.22)} L ${P(hw-b, r0)} Z` };
+  },
+  // Disipador: aletas paralelas muy juntas.
+  radiador(r0, r1, hw){
+    const h = r1 - r0;
+    let d = `M ${P(-hw,r0)} L ${P(-hw,r0+h*0.16)} L ${P(hw,r0+h*0.16)} L ${P(hw,r0)} Z`;
+    for (let i = 0; i < 6; i++){
+      const a = -hw + 2*hw*(i + 0.16)/6, b = -hw + 2*hw*(i + 0.84)/6;
+      d += ` M ${P(a, r0+h*0.2)} L ${P(a, r1)} L ${P(b, r1)} L ${P(b, r0+h*0.2)} Z`;
+    }
+    return { d };
+  },
+  // Escotilla con bisagras.
+  escotilla(r0, r1, hw){
+    const h = r1 - r0, a = hw * 0.72;
+    return { d:`M ${P(-a, r0+h*0.12)} L ${P(-a, r1-h*0.12)} L ${P(a, r1-h*0.12)} L ${P(a, r0+h*0.12)} Z `
+              + `M ${P(-a*0.55, r0)} L ${P(-a*0.55, r0+h*0.12)} L ${P(-a*0.2, r0+h*0.12)} L ${P(-a*0.2, r0)} Z `
+              + `M ${P(a*0.2, r0)} L ${P(a*0.2, r0+h*0.12)} L ${P(a*0.55, r0+h*0.12)} L ${P(a*0.55, r0)} Z `
+              + `M ${P(-a*0.3, r0+h*0.4)} L ${P(-a*0.3, r1-h*0.4)} L ${P(a*0.3, r1-h*0.4)} L ${P(a*0.3, r0+h*0.4)} Z`,
+             evenodd:true };
+  },
+  // Ranuras de ventilación inclinadas.
+  ranura(r0, r1, hw){
+    const h = r1 - r0;
+    let d = '';
+    for (let i = 0; i < 4; i++){
+      const a = -hw*0.8 + 1.6*hw*i/4, b = a + hw*0.26;
+      d += ` M ${P(a, r0+h*0.1)} L ${P(b, r1-h*0.1)} L ${P(b + hw*0.14, r1-h*0.1)} `
+         + `L ${P(a + hw*0.14, r0+h*0.1)} Z`;
+    }
+    return { d: d.trim() };
+  },
+  // Ojiva: punta de misil o de blindaje frontal.
+  ojiva(r0, r1, hw){
+    const h = r1 - r0;
+    return { d:`M ${P(0,r1)} C ${P(-hw*0.62, r1-h*0.38)} ${P(-hw*0.82, r0+h*0.22)} ${P(-hw*0.82, r0)} `
+              + `L ${P(hw*0.82, r0)} C ${P(hw*0.82, r0+h*0.22)} ${P(hw*0.62, r1-h*0.38)} ${P(0,r1)} Z` };
+  },
+
+  /* --- panelado de casco (referencias de mecha ochentero) --- */
+  // Matriz de pulsadores: la retícula de teclas redondeadas de un panel.
+  teclas(r0, r1, hw){
+    const h = r1 - r0, filas = 3, cols = 4;
+    let d = '';
+    for (let f = 0; f < filas; f++)
+      for (let c = 0; c < cols; c++){
+        const ra = r0 + h*(f + 0.13)/filas, rb = r0 + h*(f + 0.87)/filas;
+        const a = -hw + 2*hw*(c + 0.11)/cols, b = -hw + 2*hw*(c + 0.89)/cols;
+        d += ` M ${P(a,ra)} L ${P(a,rb)} L ${P(b,rb)} L ${P(b,ra)} Z`;
+      }
+    return { d: d.trim() };
+  },
+  // Ranura cápsula: hueco alargado de extremos redondos.
+  capsula(r0, r1, hw){
+    const h = r1 - r0, a = hw * 0.44, t = h * 0.20;
+    return { d:`M ${P(-a, r0+t)} L ${P(-a, r1-t)} Q ${P(-a, r1)} ${P(0, r1)} Q ${P(a, r1)} ${P(a, r1-t)} `
+              + `L ${P(a, r0+t)} Q ${P(a, r0)} ${P(0, r0)} Q ${P(-a, r0)} ${P(-a, r0+t)} Z` };
+  },
+  // Etiqueta de advertencia: placa con el damero vaciado.
+  etiqueta(r0, r1, hw){
+    const h = r1 - r0, a = hw * 0.66;
+    let d = `M ${P(-a, r0+h*0.18)} L ${P(-a, r1-h*0.18)} L ${P(a, r1-h*0.18)} L ${P(a, r0+h*0.18)} Z`;
+    for (let f = 0; f < 2; f++)
+      for (let c = 0; c < 3; c++){
+        if ((f + c) % 2) continue;
+        const ra = r0 + h*(0.30 + f*0.20), rb = ra + h*0.16;
+        const x0 = -a*0.78 + 1.56*a*c/3, x1 = -a*0.78 + 1.56*a*(c+1)/3;
+        d += ` M ${P(x0,ra)} L ${P(x0,rb)} L ${P(x1,rb)} L ${P(x1,ra)} Z`;
+      }
+    return { d, evenodd:true };
+  },
+  // Brida: puerto redondo con su círculo de tornillos.
+  brida(r0, r1, hw){
+    const mid = (r0 + r1) / 2, [cx, cy] = pt(0, mid);
+    const R = Math.max(Math.min((r1-r0)/2, mid*Math.sin(hw*D2R)) * 0.92, 6);
+    let d = circuloPath(cx, cy, R) + ' ' + circuloPath(cx, cy, R*0.50);
+    for (let i = 0; i < 8; i++){
+      const ang = i * Math.PI / 4;
+      d += ' ' + circuloPath(cx + R*0.75*Math.cos(ang), cy + R*0.75*Math.sin(ang), Math.max(R*0.11, 1.4));
+    }
+    return { d, evenodd:true };
+  },
+  // Diamante de advertencia con el rayo vaciado.
+  diamante(r0, r1, hw){
+    const mid = (r0 + r1) / 2, h = r1 - r0;
+    const s = Math.max(Math.min(h*0.42, mid*Math.sin(hw*D2R)*0.82), 5);
+    const [cx, cy] = pt(0, mid), f = (x, y) => `${(cx+x).toFixed(1)},${(cy+y).toFixed(1)}`;
+    return { d:`M ${f(0,-s)} L ${f(s,0)} L ${f(0,s)} L ${f(-s,0)} Z `
+              + `M ${f(s*0.16,-s*0.52)} L ${f(-s*0.24,s*0.04)} L ${f(s*0.02,s*0.04)} `
+              + `L ${f(-s*0.16,s*0.54)} L ${f(s*0.26,-s*0.08)} L ${f(-s*0.02,-s*0.08)} Z`,
+             evenodd:true };
+  },
+
+  /* --- señalética de mecha: franjas, dianas y códigos --- */
+  // Franja de peligro: rayado diagonal continuo de lado a lado del sector.
+  peligro(r0, r1, hw){
+    const n = 4, paso = 2*hw/n, sesgo = hw * 0.55;
+    let d = '';
+    for (let i = -1; i < n; i++){
+      const a0 = -hw + paso*i, a1 = a0 + paso*0.5;
+      d += ` M ${P(Math.max(a0,-hw), r0)} L ${P(Math.max(a1,-hw), r0)} `
+         + `L ${P(Math.min(a1+sesgo, hw), r1)} L ${P(Math.min(a0+sesgo, hw), r1)} Z`;
+    }
+    return { d: d.trim() };
+  },
+  // Diana / retícula de puntería.
+  diana(r0, r1, hw){
+    const mid = (r0 + r1) / 2, [cx, cy] = pt(0, mid);
+    const R = Math.max(Math.min((r1-r0)/2, mid*Math.sin(hw*D2R)) * 0.86, 5);
+    return { d: circuloPath(cx, cy, R) + ' ' + circuloPath(cx, cy, R*0.44)
+              + ` M ${(cx-R*1.4).toFixed(1)},${cy.toFixed(1)} L ${(cx-R*0.55).toFixed(1)},${cy.toFixed(1)}`
+              + ` M ${(cx+R*0.55).toFixed(1)},${cy.toFixed(1)} L ${(cx+R*1.4).toFixed(1)},${cy.toFixed(1)}`
+              + ` M ${cx.toFixed(1)},${(cy-R*1.4).toFixed(1)} L ${cx.toFixed(1)},${(cy-R*0.55).toFixed(1)}`
+              + ` M ${cx.toFixed(1)},${(cy+R*0.55).toFixed(1)} L ${cx.toFixed(1)},${(cy+R*1.4).toFixed(1)}`,
+             trazo:true };
+  },
+  // Desgaste: rayas cortas de uso sobre el blindaje.
+  desgaste(r0, r1, hw){
+    const h = r1 - r0;
+    let d = '';
+    [[-0.52, 0.18, 0.30], [0.08, 0.50, 0.24], [0.58, 0.12, 0.34]].forEach(([a, f, L]) => {
+      d += ` M ${P(hw*a, r0 + h*f)} L ${P(hw*(a + 0.16), r0 + h*Math.min(f + L, 0.98))}`;
+    });
+    return { d: d.trim(), trazo:true };
+  },
+  // Código de barras estarcido sobre el blindaje.
+  codigo(r0, r1, hw){
+    const h = r1 - r0;
+    let d = '', a = -hw * 0.92;
+    [0.07, 0.035, 0.10, 0.045, 0.03, 0.085, 0.05].forEach((v, i) => {
+      const b = a + hw * 2 * v;
+      if (i % 2 === 0)
+        d += ` M ${P(a, r0+h*0.24)} L ${P(a, r1-h*0.24)} L ${P(b, r1-h*0.24)} L ${P(b, r0+h*0.24)} Z`;
+      a = b + hw * 0.05;
+    });
+    return { d: d.trim() };
+  },
+  /* --- artillería ---
+     Se dejó SOLO la familia del cañón. Espadas, hachas y lanzas leían como
+     armamento medieval, no como mecha, y el resto de armas desviaba el estilo
+     de lo que muestran las referencias: chapa, uniones, engranajes y
+     señalética. Todo apunta hacia afuera, la culata en r0 y la boca en r1. */
+  // Cañón de riel: tubo largo con anillos aceleradores y culata.
+  railgun(r0, r1, hw){
+    const h = r1 - r0;
+    let d = `M ${P(-hw*0.19,r0+h*0.12)} L ${P(-hw*0.19,r1)} L ${P(hw*0.19,r1)} L ${P(hw*0.19,r0+h*0.12)} Z`;
+    [0.22, 0.40, 0.58, 0.76].forEach(f => {
+      d += ` M ${P(-hw*0.54,r0+h*f)} L ${P(-hw*0.54,r0+h*(f+0.08))} `
+         + `L ${P(hw*0.54,r0+h*(f+0.08))} L ${P(hw*0.54,r0+h*f)} Z`;
+    });
+    d += ` M ${P(-hw*0.46,r0)} L ${P(-hw*0.46,r0+h*0.14)} L ${P(hw*0.46,r0+h*0.14)} L ${P(hw*0.46,r0)} Z`;
+    return { d };
+  },
+  // Cañón doble con puente de unión.
+  canonDoble(r0, r1, hw){
+    const h = r1 - r0;
+    let d = `M ${P(-hw*0.62,r0)} L ${P(-hw*0.62,r0+h*0.30)} L ${P(hw*0.62,r0+h*0.30)} L ${P(hw*0.62,r0)} Z`;
+    [-0.34, 0.34].forEach(f => {
+      d += ` M ${P(hw*f - hw*0.17, r0+h*0.26)} L ${P(hw*f - hw*0.17, r1)} `
+         + `L ${P(hw*f + hw*0.17, r1)} L ${P(hw*f + hw*0.17, r0+h*0.26)} Z`;
+      d += ` M ${P(hw*f - hw*0.26, r1-h*0.12)} L ${P(hw*f - hw*0.26, r1)} `
+         + `L ${P(hw*f + hw*0.26, r1)} L ${P(hw*f + hw*0.26, r1-h*0.12)} Z`;
+    });
+    d += ` M ${P(-hw*0.20, r0+h*0.56)} L ${P(-hw*0.20, r0+h*0.68)} `
+       + `L ${P(hw*0.20, r0+h*0.68)} L ${P(hw*0.20, r0+h*0.56)} Z`;
+    return { d: d.trim() };
+  },
+  // Bocacha con venteos laterales.
+  bocacha(r0, r1, hw){
+    const h = r1 - r0;
+    let d = `M ${P(-hw*0.36,r0)} L ${P(-hw*0.36,r1)} L ${P(hw*0.36,r1)} L ${P(hw*0.36,r0)} Z`;
+    [0.24, 0.50, 0.76].forEach(f => {
+      d += ` M ${P(-hw*0.62,r0+h*f)} L ${P(-hw*0.62,r0+h*(f+0.12))} `
+         + `L ${P(hw*0.62,r0+h*(f+0.12))} L ${P(hw*0.62,r0+h*f)} Z`;
+    });
+    return { d: d.trim() };
+  },
+
+  /* --- cabeza del mecha: casco, ojos y antenas ---
+     Es lo que identifica al robot de un vistazo, y en las referencias aparece
+     una y otra vez. */
+  // Casco completo: cresta en V, visor y mentón, en una sola pieza.
+  cascoMecha(r0, r1, hw){
+    const h = r1 - r0;
+    return { d:`M ${P(-hw*0.52,r0)} L ${P(-hw*0.66,r0+h*0.34)} L ${P(-hw*0.58,r0+h*0.62)} `
+              + `L ${P(-hw*0.30,r0+h*0.74)} L ${P(-hw*0.86,r1)} L ${P(-hw*0.34,r0+h*0.86)} `
+              + `L ${P(0,r1)} L ${P(hw*0.34,r0+h*0.86)} L ${P(hw*0.86,r1)} `
+              + `L ${P(hw*0.30,r0+h*0.74)} L ${P(hw*0.58,r0+h*0.62)} L ${P(hw*0.66,r0+h*0.34)} `
+              + `L ${P(hw*0.52,r0)} Z `
+              + `M ${P(-hw*0.46,r0+h*0.30)} L ${P(-hw*0.20,r0+h*0.46)} L ${P(hw*0.20,r0+h*0.46)} `
+              + `L ${P(hw*0.46,r0+h*0.30)} L ${P(hw*0.30,r0+h*0.20)} L ${P(-hw*0.30,r0+h*0.20)} Z`,
+             evenodd:true };
+  },
+  // Ojo de visor: ranura horizontal con ceja.
+  ojoVisor(r0, r1, hw){
+    const h = r1 - r0;
+    return { d:`M ${P(-hw*0.82,r0+h*0.26)} L ${P(-hw*0.62,r0+h*0.62)} L ${P(hw*0.62,r0+h*0.62)} `
+              + `L ${P(hw*0.82,r0+h*0.26)} L ${P(hw*0.50,r0+h*0.12)} L ${P(-hw*0.50,r0+h*0.12)} Z `
+              + `M ${P(-hw*0.56,r0+h*0.32)} L ${P(-hw*0.44,r0+h*0.52)} L ${P(hw*0.44,r0+h*0.52)} `
+              + `L ${P(hw*0.56,r0+h*0.32)} Z `
+              + `M ${P(-hw*0.74,r0+h*0.70)} L ${P(-hw*0.74,r0+h*0.82)} L ${P(hw*0.74,r0+h*0.82)} `
+              + `L ${P(hw*0.74,r0+h*0.70)} Z`, evenodd:true };
+  },
+  // Antenas gemelas segmentadas.
+  antenaDoble(r0, r1, hw){
+    const h = r1 - r0;
+    let d = `M ${P(-hw*0.50,r0)} L ${P(-hw*0.50,r0+h*0.18)} L ${P(hw*0.50,r0+h*0.18)} L ${P(hw*0.50,r0)} Z`;
+    [-0.28, 0.28].forEach(f => {
+      d += ` M ${P(hw*f - hw*0.07, r0+h*0.14)} L ${P(hw*f - hw*0.04, r1)} `
+         + `L ${P(hw*f + hw*0.04, r1)} L ${P(hw*f + hw*0.07, r0+h*0.14)} Z`;
+      [0.36, 0.60].forEach(g => {
+        d += ` M ${P(hw*f - hw*0.16, r0+h*g)} L ${P(hw*f - hw*0.16, r0+h*(g+0.07))} `
+           + `L ${P(hw*f + hw*0.16, r0+h*(g+0.07))} L ${P(hw*f + hw*0.16, r0+h*g)} Z`;
+      });
+    });
+    return { d: d.trim() };
+  },
+
+  /* --- uniones y transmisión --- */
+  // Rótula: esfera entre dos horquillas.
+  rotula(r0, r1, hw){
+    const mid = (r0 + r1) / 2, h = r1 - r0, [cx, cy] = pt(0, mid);
+    const R = Math.max(Math.min(h * 0.24, mid * Math.sin(hw * D2R) * 0.80), 5);
+    return { d: circuloPath(cx, cy, R) + ' ' + circuloPath(cx, cy, R * 0.34)
+              + ` M ${P(-hw*0.30,r0)} L ${P(-hw*0.30,mid - R*0.4)} L ${P(-hw*0.62,mid - R*0.4)} `
+              + `L ${P(-hw*0.62,r0)} Z `
+              + `M ${P(hw*0.62,r0)} L ${P(hw*0.62,mid - R*0.4)} L ${P(hw*0.30,mid - R*0.4)} `
+              + `L ${P(hw*0.30,r0)} Z `
+              + `M ${P(-hw*0.30,r1)} L ${P(-hw*0.30,mid + R*0.4)} L ${P(-hw*0.62,mid + R*0.4)} `
+              + `L ${P(-hw*0.62,r1)} Z `
+              + `M ${P(hw*0.62,r1)} L ${P(hw*0.62,mid + R*0.4)} L ${P(hw*0.30,mid + R*0.4)} `
+              + `L ${P(hw*0.30,r1)} Z`, evenodd:true };
+  },
+  // Bisagra: nudillos alternos con el pasador.
+  bisagra(r0, r1, hw){
+    const h = r1 - r0;
+    let d = '';
+    for (let i = 0; i < 4; i++){
+      const a = r0 + h*(i + 0.05)/4, b = r0 + h*(i + 0.95)/4;
+      const lado = (i % 2) ? 1 : -1;
+      d += ` M ${P(lado * hw*0.06, a)} L ${P(lado * hw*0.06, b)} `
+         + `L ${P(lado * hw*0.72, b)} L ${P(lado * hw*0.72, a)} Z`;
+    }
+    d += ` M ${P(-hw*0.13,r0)} L ${P(-hw*0.13,r1)} L ${P(hw*0.13,r1)} L ${P(hw*0.13,r0)} Z`;
+    return { d: d.trim() };
+  },
+  // Acople: collar con pestañas de bloqueo.
+  acople(r0, r1, hw){
+    const h = r1 - r0;
+    let d = `M ${P(-hw*0.52,r0+h*0.20)} L ${P(-hw*0.52,r1-h*0.20)} `
+          + `L ${P(hw*0.52,r1-h*0.20)} L ${P(hw*0.52,r0+h*0.20)} Z`;
+    [-0.78, 0.78].forEach(f => {
+      d += ` M ${P(hw*f - hw*0.16, r0+h*0.34)} L ${P(hw*f - hw*0.16, r1-h*0.34)} `
+         + `L ${P(hw*f + hw*0.16, r1-h*0.34)} L ${P(hw*f + hw*0.16, r0+h*0.34)} Z`;
+    });
+    d += ` M ${P(-hw*0.30,r0+h*0.42)} L ${P(-hw*0.30,r1-h*0.42)} `
+       + `L ${P(hw*0.30,r1-h*0.42)} L ${P(hw*0.30,r0+h*0.42)} Z`;
+    return { d: d.trim(), evenodd:true };
+  },
+  // Piñón: rueda dentada pequeña con eje y chavetero.
+  pinon(r0, r1, hw){
+    const mid = (r0 + r1) / 2, h = r1 - r0, [cx, cy] = pt(0, mid);
+    const R = Math.max(Math.min(h * 0.30, mid * Math.sin(hw * D2R) * 0.85), 6);
+    let d = circuloPath(cx, cy, R * 0.82) + ' ' + circuloPath(cx, cy, R * 0.26);
+    for (let i = 0; i < 10; i++){
+      const a = i * Math.PI / 5, w = 0.16;
+      const q = (rr, s) => `${(cx + rr*Math.cos(a+s)).toFixed(1)},${(cy + rr*Math.sin(a+s)).toFixed(1)}`;
+      d += ` M ${q(R*0.78,-w)} L ${q(R,-w*0.6)} L ${q(R,w*0.6)} L ${q(R*0.78,w)} Z`;
+    }
+    d += ` M ${P(-hw*0.09, r0)} L ${P(-hw*0.09, r1)} L ${P(hw*0.09, r1)} L ${P(hw*0.09, r0)} Z`;
+    return { d, evenodd:true };
+  },
+
+  /* --- estructura y chapa --- */
+  // Viga en doble T con agujeros de aligeramiento.
+  viga(r0, r1, hw){
+    const h = r1 - r0;
+    let d = `M ${P(-hw*0.80,r0)} L ${P(-hw*0.80,r0+h*0.16)} L ${P(-hw*0.20,r0+h*0.16)} `
+          + `L ${P(-hw*0.20,r1-h*0.16)} L ${P(-hw*0.80,r1-h*0.16)} L ${P(-hw*0.80,r1)} `
+          + `L ${P(hw*0.80,r1)} L ${P(hw*0.80,r1-h*0.16)} L ${P(hw*0.20,r1-h*0.16)} `
+          + `L ${P(hw*0.20,r0+h*0.16)} L ${P(hw*0.80,r0+h*0.16)} L ${P(hw*0.80,r0)} Z`;
+    [0.36, 0.64].forEach(f => {
+      const [cx, cy] = pt(0, r0 + h*f);
+      d += ' ' + circuloPath(cx, cy, Math.min(h*0.09, 6));
+    });
+    return { d, evenodd:true };
+  },
+  // Cartela de refuerzo con sus tornillos.
+  refuerzo(r0, r1, hw){
+    const h = r1 - r0;
+    let d = `M ${P(-hw*0.86,r0)} L ${P(-hw*0.86,r0+h*0.24)} L ${P(0,r1)} `
+          + `L ${P(hw*0.86,r0+h*0.24)} L ${P(hw*0.86,r0)} Z`;
+    [[-0.56, 0.16], [0.56, 0.16], [0, 0.50]].forEach(([a, f]) => {
+      const [cx, cy] = pt(hw*a, r0 + h*f);
+      d += ' ' + circuloPath(cx, cy, Math.min(h*0.07, 4.5));
+    });
+    return { d, evenodd:true };
+  },
+  // Chapa ondulada.
+  chapaOndulada(r0, r1, hw){
+    const h = r1 - r0, n = 5;
+    let d = '';
+    for (let i = 0; i < n; i++){
+      const a = -hw + 2*hw*(i + 0.10)/n, b = -hw + 2*hw*(i + 0.90)/n;
+      d += ` M ${P(a, r0)} L ${P(a, r1)} L ${P(b, r1)} L ${P(b, r0)} Z`;
+    }
+    d += ` M ${P(-hw, r0)} L ${P(-hw, r0+h*0.10)} L ${P(hw, r0+h*0.10)} L ${P(hw, r0)} Z`;
+    d += ` M ${P(-hw, r1-h*0.10)} L ${P(-hw, r1)} L ${P(hw, r1)} L ${P(hw, r1-h*0.10)} Z`;
+    return { d: d.trim() };
+  },
+  // Flecha de señalización de sentido.
+  flechaDir(r0, r1, hw){
+    const h = r1 - r0;
+    return { d:`M ${P(0,r1)} L ${P(-hw*0.62,r0+h*0.44)} L ${P(-hw*0.26,r0+h*0.44)} `
+              + `L ${P(-hw*0.26,r0)} L ${P(hw*0.26,r0)} L ${P(hw*0.26,r0+h*0.44)} `
+              + `L ${P(hw*0.62,r0+h*0.44)} Z` };
+  },
+
+  /* --- señalética rotulada (referencias de hangar) --- */
+  // Placa rotulada: recuadro con renglones de texto diminuto vaciados.
+  placaTexto(r0, r1, hw){
+    const h = r1 - r0, a = hw * 0.70;
+    let d = `M ${P(-a, r0+h*0.16)} L ${P(-a, r1-h*0.16)} L ${P(a, r1-h*0.16)} L ${P(a, r0+h*0.16)} Z`;
+    [0.28, 0.46, 0.64].forEach((f, i) => {
+      const w = a * (i === 2 ? 0.42 : 0.74);
+      d += ` M ${P(-w, r0+h*f)} L ${P(-w, r0+h*(f+0.08))} L ${P(w, r0+h*(f+0.08))} L ${P(w, r0+h*f)} Z`;
+    });
+    return { d, evenodd:true };
+  },
+  // Triángulo de advertencia con la exclamación vaciada.
+  trianguloAviso(r0, r1, hw){
+    const h = r1 - r0;
+    return { d:`M ${P(0,r1)} L ${P(hw*0.86,r0)} L ${P(-hw*0.86,r0)} Z `
+              + `M ${P(-hw*0.10, r0+h*0.30)} L ${P(hw*0.10, r0+h*0.30)} L ${P(hw*0.06, r0+h*0.62)} `
+              + `L ${P(-hw*0.06, r0+h*0.62)} Z `
+              + `M ${P(-hw*0.09, r0+h*0.13)} L ${P(hw*0.09, r0+h*0.13)} L ${P(hw*0.09, r0+h*0.22)} `
+              + `L ${P(-hw*0.09, r0+h*0.22)} Z`, evenodd:true };
+  },
+  // Cruz de aviso hecha de cuadrados, como los pictogramas del panel.
+  cruzAviso(r0, r1, hw){
+    const mid = (r0 + r1) / 2, [cx, cy] = pt(0, mid);
+    const s = Math.max(Math.min((r1-r0)*0.15, mid*Math.sin(hw*D2R)*0.28), 2.2);
+    const q = (x, y) => `M ${(cx+x-s).toFixed(1)},${(cy+y-s).toFixed(1)} `
+                      + `L ${(cx+x+s).toFixed(1)},${(cy+y-s).toFixed(1)} `
+                      + `L ${(cx+x+s).toFixed(1)},${(cy+y+s).toFixed(1)} `
+                      + `L ${(cx+x-s).toFixed(1)},${(cy+y+s).toFixed(1)} Z `;
+    return { d: q(0,0) + q(-2.3*s,0) + q(2.3*s,0) + q(0,-2.3*s) + q(0,2.3*s) };
+  },
+  // Las barras diagonales que acompañan a las etiquetas de aviso.
+  barrasAviso(r0, r1, hw){
+    const h = r1 - r0;
+    let d = '';
+    for (let i = 0; i < 3; i++){
+      const a = -hw*0.58 + hw*0.52*i;
+      d += ` M ${P(a, r0+h*0.24)} L ${P(a + hw*0.20, r1-h*0.24)} `
+         + `L ${P(a + hw*0.34, r1-h*0.24)} L ${P(a + hw*0.14, r0+h*0.24)} Z`;
+    }
+    return { d: d.trim() };
+  },
+
+  /* --- componentes mecánicos de mecha japonés --- */
+  // Manguera corrugada: el tubo de acordeón del Zaku y del Patlabor.
+  corrugada(r0, r1, hw){
+    const h = r1 - r0, n = 7;
+    let d = '';
+    for (let i = 0; i < n; i++){
+      const a = r0 + h*(i + 0.06)/n, b = r0 + h*(i + 0.82)/n;
+      const w = hw * (0.28 + ((i % 2) ? 0.18 : 0));
+      d += ` M ${P(-w,a)} L ${P(-w,b)} L ${P(w,b)} L ${P(w,a)} Z`;
+    }
+    return { d: d.trim() };
+  },
+  // Disco de articulación con círculo de tornillos y buje.
+  discoJunta(r0, r1, hw){
+    const mid = (r0 + r1) / 2, [cx, cy] = pt(0, mid);
+    const R = Math.max(Math.min((r1-r0)/2, mid*Math.sin(hw*D2R)) * 0.95, 7);
+    let d = circuloPath(cx, cy, R) + ' ' + circuloPath(cx, cy, R*0.32);
+    for (let i = 0; i < 6; i++){
+      const ang = i * Math.PI / 3;
+      d += ' ' + circuloPath(cx + R*0.66*Math.cos(ang), cy + R*0.66*Math.sin(ang), Math.max(R*0.12, 1.4));
+    }
+    return { d, evenodd:true };
+  },
+  // Pistón con vástago salido y collarines.
+  pistonVastago(r0, r1, hw){
+    const h = r1 - r0;
+    let d = `M ${P(-hw*0.42,r0)} L ${P(-hw*0.42,r0+h*0.54)} L ${P(hw*0.42,r0+h*0.54)} L ${P(hw*0.42,r0)} Z`;
+    d += ` M ${P(-hw*0.16,r0+h*0.50)} L ${P(-hw*0.16,r1)} L ${P(hw*0.16,r1)} L ${P(hw*0.16,r0+h*0.50)} Z`;
+    [0.08, 0.28].forEach(f => {
+      d += ` M ${P(-hw*0.58,r0+h*f)} L ${P(-hw*0.58,r0+h*(f+0.08))} `
+         + `L ${P(hw*0.58,r0+h*(f+0.08))} L ${P(hw*0.58,r0+h*f)} Z`;
+    });
+    d += ` M ${P(-hw*0.32,r1-h*0.09)} L ${P(-hw*0.32,r1)} L ${P(hw*0.32,r1)} L ${P(hw*0.32,r1-h*0.09)} Z`;
+    return { d };
+  },
+  // Cañón de varios tubos sobre su cuna.
+  multitubo(r0, r1, hw){
+    const h = r1 - r0;
+    let d = `M ${P(-hw*0.74,r0)} L ${P(-hw*0.74,r0+h*0.26)} L ${P(hw*0.74,r0+h*0.26)} L ${P(hw*0.74,r0)} Z`;
+    [-0.46, 0, 0.46].forEach(f => {
+      d += ` M ${P(hw*f - hw*0.15, r0+h*0.22)} L ${P(hw*f - hw*0.15, r1)} `
+         + `L ${P(hw*f + hw*0.15, r1)} L ${P(hw*f + hw*0.15, r0+h*0.22)} Z`;
+    });
+    return { d: d.trim() };
+  },
+  // Perilla rotatoria con su marca indicadora.
+  perilla(r0, r1, hw){
+    const mid = (r0 + r1) / 2, [cx, cy] = pt(0, mid);
+    const R = Math.max(Math.min((r1-r0)/2, mid*Math.sin(hw*D2R)) * 0.88, 5);
+    return { d: circuloPath(cx,cy,R) + ' ' + circuloPath(cx,cy,R*0.30)
+              + ` M ${(cx-R*0.11).toFixed(1)},${(cy-R*0.94).toFixed(1)} `
+              + `L ${(cx+R*0.11).toFixed(1)},${(cy-R*0.94).toFixed(1)} `
+              + `L ${(cx+R*0.11).toFixed(1)},${(cy-R*0.36).toFixed(1)} `
+              + `L ${(cx-R*0.11).toFixed(1)},${(cy-R*0.36).toFixed(1)} Z`, evenodd:true };
+  },
+  // Eslabón de oruga.
+  eslabon(r0, r1, hw){
+    const h = r1 - r0;
+    return { d:`M ${P(-hw*0.90,r0+h*0.18)} L ${P(-hw*0.90,r1-h*0.18)} `
+              + `L ${P(hw*0.90,r1-h*0.18)} L ${P(hw*0.90,r0+h*0.18)} Z `
+              + `M ${P(-hw*0.52,r0+h*0.34)} L ${P(-hw*0.52,r0+h*0.60)} `
+              + `L ${P(-hw*0.18,r0+h*0.60)} L ${P(-hw*0.18,r0+h*0.34)} Z `
+              + `M ${P(hw*0.18,r0+h*0.34)} L ${P(hw*0.18,r0+h*0.60)} `
+              + `L ${P(hw*0.52,r0+h*0.60)} L ${P(hw*0.52,r0+h*0.34)} Z`, evenodd:true };
+  },
+
+  // Engranaje completo: corona dentada con cubo y agujero.
+  engranaje(r0, r1, hw){
+    const mid = (r0 + r1) / 2, h = r1 - r0;
+    const Rr = mid + h * 0.18, Rd = mid + h * 0.42, Rc = mid - h * 0.30;
+    const dientes = Math.max(8, Math.min(24, Math.round(hw ? 180 / hw : 12)));
+    let d = circuloPath(0, 0, Rr) + ' ' + circuloPath(0, 0, Rc);
+    for (let i = 0; i < dientes; i++){
+      const c = i * 360 / dientes, w = (180 / dientes) * 0.5;
+      d += ` M ${P(c-w, Rr)} L ${P(c-w*0.62, Rd)} L ${P(c+w*0.62, Rd)} L ${P(c+w, Rr)} Z`;
+    }
+    return { d, evenodd:true };
+  }
+};
+
+/* Dígitos de siete segmentos, para la numeración estarcida de las unidades.
+   Caja de ±20 × ±34; se colocan con `tr`, como las siluetas de animales.   */
+const SEGMENTOS = {
+  a:'M -14,-32 L 14,-32 L 9,-25 L -9,-25 Z',
+  b:'M 17,-30 L 17,-4 L 11,-9 L 11,-25 Z',
+  c:'M 17,4 L 17,30 L 11,25 L 11,9 Z',
+  d:'M -14,32 L 14,32 L 9,25 L -9,25 Z',
+  e:'M -17,4 L -17,30 L -11,25 L -11,9 Z',
+  f:'M -17,-30 L -17,-4 L -11,-9 L -11,-25 Z',
+  g:'M -13,0 L -8,-5 L 8,-5 L 13,0 L 8,5 L -8,5 Z'
+};
+// Solo las letras que el display de siete segmentos sabe formar. Basta para
+// los códigos de bahía del tipo E-75, A-12 o CF-09 de las referencias.
+const GLIFOS = {
+  '0':'abcdef','1':'bc','2':'abdeg','3':'abcdg','4':'bcfg','5':'acdfg',
+  '6':'acdefg','7':'abc','8':'abcdefg','9':'abcdfg',
+  'A':'abcefg','B':'cdefg','C':'adef','D':'bcdeg','E':'adefg','F':'aefg',
+  'H':'bcefg','L':'def','P':'abefg','U':'bcdef','-':'g'
+};
+
+// Texto estarcido, centrado en el origen. Los caracteres desconocidos se
+// ignoran en vez de romper el path.
+function textoPath(txt){
+  const cars = [...String(txt).toUpperCase()].filter(c => GLIFOS[c]);
+  const anchoD = 44, total = cars.length * anchoD;
+  let d = '';
+  cars.forEach((ch, i) => {
+    const dx = -total/2 + anchoD/2 + i*anchoD;
+    [...GLIFOS[ch]].forEach(seg => {
+      d += ' ' + SEGMENTOS[seg].replace(/(-?[\d.]+),(-?[\d.]+)/g,
+             (_, x, y) => `${(+x + dx).toFixed(1)},${y}`);
+    });
+  });
+  return d.trim();
+}
+const numeroPath = textoPath;
+
+// Código de bahía al estilo de los rótulos del hangar.
+function codigoBahia(rnd){
+  const letras = 'ABCDEFHLPU';
+  const l = () => letras[Math.floor(rnd() * letras.length)];
+  const n = (max) => String(Math.floor(rnd() * max)).padStart(2, '0');
+  return elegir(rnd, [
+    () => `${l()}-${n(100)}`,
+    () => `${n(100)}-${l()}${Math.floor(rnd()*10)}`,
+    () => `${l()}${l()}-${Math.floor(rnd()*10)}`,
+    () => n(100)
+  ])();
+}
+
+/* Subdivisión de Koch: cada segmento se parte en tres y el tramo central se
+   sustituye por dos lados de un triángulo equilátero que apunta hacia afuera. */
+function kochPuntos(x0, y0, x1, y1, n){
+  if (n === 0) return [[x1, y1]];
+  const dx = (x1 - x0) / 3, dy = (y1 - y0) / 3;
+  const ax = x0 + dx, ay = y0 + dy, bx = x0 + 2*dx, by = y0 + 2*dy;
+  const px = ax + dx*0.5 + dy*0.8660254;
+  const py = ay + dy*0.5 - dx*0.8660254;
+  return kochPuntos(x0,y0,ax,ay,n-1).concat(
+         kochPuntos(ax,ay,px,py,n-1),
+         kochPuntos(px,py,bx,by,n-1),
+         kochPuntos(bx,by,x1,y1,n-1));
+}
+
+/* Árbol fractal: ramificación recursiva, la regla de crecimiento de casi
+   cualquier planta. Devuelve trazo puro. */
+function arbolFractal(r0, r1, niveles){
+  let d = '';
+  (function rec(x, y, ang, len, n){
+    const x2 = x + len*Math.sin(ang), y2 = y - len*Math.cos(ang);
+    d += ` M ${x.toFixed(1)},${y.toFixed(1)} L ${x2.toFixed(1)},${y2.toFixed(1)}`;
+    if (n <= 0) return;
+    rec(x2, y2, ang - 0.44, len*0.68, n - 1);
+    rec(x2, y2, ang + 0.44, len*0.68, n - 1);
+  })(0, -r0, 0, (r1 - r0) * 0.40, niveles || 3);
+  return d.trim();
+}
+
+/* Copo de Koch completo: los tres lados de un triángulo equilátero
+   subdivididos. Es la fractal más reconocible de todas, y cerrada se lee de
+   inmediato — a diferencia de un borde suelto, que se pierde entre el resto. */
+function copoKoch(R, niveles){
+  const v = [pt(0, R), pt(120, R), pt(240, R)];
+  let pts = [];
+  for (let i = 0; i < 3; i++){
+    const a = v[i], b = v[(i + 1) % 3];
+    pts = pts.concat(kochPuntos(a[0], a[1], b[0], b[1], niveles));
+  }
+  return `M ${v[0][0].toFixed(1)},${v[0][1].toFixed(1)} `
+       + pts.map(p => `L ${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' ') + ' Z';
+}
+
+/* Triángulo de Sierpinski: el triángulo se parte en tres copias de sí mismo,
+   nivel tras nivel. Autosimilitud pura. */
+function sierpinski(R, niveles){
+  let d = '';
+  (function rec(ax, ay, bx, by, cx, cy, n){
+    if (n <= 0){
+      d += ` M ${ax.toFixed(1)},${ay.toFixed(1)} L ${bx.toFixed(1)},${by.toFixed(1)} `
+         + `L ${cx.toFixed(1)},${cy.toFixed(1)} Z`;
+      return;
+    }
+    const ab = [(ax+bx)/2, (ay+by)/2], bc = [(bx+cx)/2, (by+cy)/2], ca = [(cx+ax)/2, (cy+ay)/2];
+    rec(ax, ay, ab[0], ab[1], ca[0], ca[1], n - 1);
+    rec(ab[0], ab[1], bx, by, bc[0], bc[1], n - 1);
+    rec(ca[0], ca[1], bc[0], bc[1], cx, cy, n - 1);
+  })(...pt(0, R), ...pt(120, R), ...pt(240, R), niveles);
+  return d.trim();
+}
+
+/* Empaquetado de círculos: dentro de cada círculo caben tres más pequeños,
+   y así sucesivamente. La lógica de las burbujas y de la espuma. */
+function circulosFractal(R, niveles){
+  let d = circuloPath(0, 0, R);
+  (function rec(cx, cy, r, n){
+    if (n <= 0) return;
+    for (let i = 0; i < 3; i++){
+      const a = (i * 120 + (n % 2 ? 60 : 0)) * D2R, rr = r * 0.42;
+      const nx = cx + (r - rr) * Math.cos(a), ny = cy + (r - rr) * Math.sin(a);
+      d += ' ' + circuloPath(nx, ny, rr);
+      rec(nx, ny, rr, n - 1);
+    }
+  })(0, 0, R, niveles);
+  return d;
+}
+
+/* Copo dendrítico: seis brazos, y cada brazo lleva ramas que repiten al brazo.
+   Es la fractal del hielo — la que de verdad forma un copo de nieve — y a
+   diferencia del copo de Koch NO se construye sobre un triángulo, que es lo que
+   no leía como naturaleza. Devuelve figura cerrada: se puede pintar. */
+function copoDendrita(R, niveles){
+  let d = '';
+  const rama = (x, y, ang, len, w, n) => {
+    const x2 = x + len*Math.sin(ang), y2 = y - len*Math.cos(ang);
+    const nx = Math.cos(ang), ny = Math.sin(ang);          // normal al eje
+    d += ` M ${(x + nx*w).toFixed(1)},${(y + ny*w).toFixed(1)} `
+       + `L ${(x2 + nx*w*0.42).toFixed(1)},${(y2 + ny*w*0.42).toFixed(1)} `
+       + `L ${(x2 - nx*w*0.42).toFixed(1)},${(y2 - ny*w*0.42).toFixed(1)} `
+       + `L ${(x - nx*w).toFixed(1)},${(y - ny*w).toFixed(1)} Z`;
+    if (n <= 0) return;
+    [0.34, 0.60, 0.84].forEach(f => {
+      const px = x + (x2 - x)*f, py = y + (y2 - y)*f, L = len*0.44*(1 - f*0.45);
+      rama(px, py, ang - 1.05, L, w*0.55, n - 1);
+      rama(px, py, ang + 1.05, L, w*0.55, n - 1);
+    });
+  };
+  // Seis brazos: la simetría hexagonal del hielo.
+  for (let i = 0; i < 6; i++) rama(0, 0, i * Math.PI / 3, R*0.92, R*0.055, niveles);
+  return d.trim();
+}
+
+/* Filotaxis: semillas colocadas con el ángulo áureo (137.5°). Es la
+   disposición real de una cabezuela de girasol o de una piña. */
+function filotaxis(R0, R1, n){
+  const phi = Math.PI * (3 - Math.sqrt(5));
+  let d = '';
+  for (let i = 0; i < n; i++){
+    const t = Math.sqrt(i / n), rad = R0 + (R1 - R0) * t, a = i * phi;
+    d += circuloPath(rad*Math.cos(a), rad*Math.sin(a), Math.max(1.6 + 3.4*t, 1.2)) + ' ';
+  }
+  return d.trim();
+}
+// Motivos que llenan bien una banda ancha. Los demás, en bandas anchas,
+// dejan huecos y el mandala se ve vacío.
+const MOTIVOS_LLENADORES = ['petalo','gota','rombo','triangulo','arco','loto','paisley','ojival',
+                            'escalera','dientes','hoja','panel','chip','ojo',
+                            'romboAnidado','triRayado','lente','damero','abanico'];
+
+/* Siluetas de animales.
+   Esto NO es procedural y no puede serlo: no hay regla geométrica que
+   produzca una mariposa reconocible. Es una biblioteca curada; lo procedural
+   es cómo se eligen, se escalan y se distribuyen por los anillos.
+   Cada silueta está dibujada mirando hacia arriba dentro de una caja de
+   ±52 unidades, y el renderer la coloca con translate+scale.              */
+const SILUETAS = {
+  mariposa:`M 0,-26 C 2,-26 3,-14 3,4 L 3,26 C 3,32 -3,32 -3,26 L -3,4 C -3,-14 -2,-26 0,-26 Z
+            M -3,-12 C -22,-40 -50,-36 -52,-14 C -53,2 -26,4 -3,-6 Z
+            M 3,-12 C 22,-40 50,-36 52,-14 C 53,2 26,4 3,-6 Z
+            M -3,0 C -20,4 -36,20 -30,34 C -24,44 -8,22 -3,6 Z
+            M 3,0 C 20,4 36,20 30,34 C 24,44 8,22 3,6 Z`,
+  pez:     `M 0,-40 C 21,-21 21,16 0,34 C -21,16 -21,-21 0,-40 Z
+            M 0,30 L -18,52 L 0,41 L 18,52 Z`,
+  ave:     `M 0,-42 C 6,-42 9,-31 9,-16 L 6,30 L 0,44 L -6,30 L -9,-16 C -9,-31 -6,-42 0,-42 Z
+            M -7,-16 C -27,-25 -49,-16 -53,3 C -40,-2 -22,5 -7,14 Z
+            M 7,-16 C 27,-25 49,-16 53,3 C 40,-2 22,5 7,14 Z`,
+  libelula:`M 0,-40 m -6,0 a 6,6 0 1,0 12,0 a 6,6 0 1,0 -12,0 Z
+            M 0,-34 C 3,-34 4,-12 4,16 L 0,44 L -4,16 C -4,-12 -3,-34 0,-34 Z
+            M -3,-18 C -22,-33 -48,-29 -52,-18 C -48,-9 -22,-9 -3,-13 Z
+            M 3,-18 C 22,-33 48,-29 52,-18 C 48,-9 22,-9 3,-13 Z
+            M -3,-4 C -20,-2 -40,6 -42,15 C -38,22 -16,11 -3,3 Z
+            M 3,-4 C 20,-2 40,6 42,15 C 38,22 16,11 3,3 Z`,
+  tortuga: `M 0,-40 m -9,0 a 9,9 0 1,0 18,0 a 9,9 0 1,0 -18,0 Z
+            M -22,-26 m -8,0 a 8,8 0 1,0 16,0 a 8,8 0 1,0 -16,0 Z
+            M 22,-26 m -8,0 a 8,8 0 1,0 16,0 a 8,8 0 1,0 -16,0 Z
+            M -22,26 m -8,0 a 8,8 0 1,0 16,0 a 8,8 0 1,0 -16,0 Z
+            M 22,26 m -8,0 a 8,8 0 1,0 16,0 a 8,8 0 1,0 -16,0 Z
+            M 0,34 L -6,46 L 6,46 Z
+            M 0,-32 L 27,-16 L 27,16 L 0,32 L -27,16 L -27,-16 Z`,
+  gato:    `M -28,-4 C -28,-22 -14,-30 0,-30 C 14,-30 28,-22 28,-4 C 28,16 14,30 0,30 C -14,30 -28,16 -28,-4 Z
+            M -26,-14 L -34,-46 L -6,-28 Z
+            M 26,-14 L 6,-28 L 34,-46 Z`,
+  huella:  `M 0,14 m -23,0 a 23,17 0 1,0 46,0 a 23,17 0 1,0 -46,0 Z
+            M -28,-16 m -9,0 a 9,11 0 1,0 18,0 a 9,11 0 1,0 -18,0 Z
+            M -10,-31 m -9,0 a 9,12 0 1,0 18,0 a 9,12 0 1,0 -18,0 Z
+            M 10,-31 m -9,0 a 9,12 0 1,0 18,0 a 9,12 0 1,0 -18,0 Z
+            M 28,-16 m -9,0 a 9,11 0 1,0 18,0 a 9,11 0 1,0 -18,0 Z`,
+  // Los ojos van con sweep 1, al revés que el cuerpo, para que la regla
+  // nonzero los cuente como agujero en vez de rellenarlos.
+  buho:    `M 0,-34 C 21,-34 34,-15 34,7 C 34,29 19,44 0,44 C -19,44 -34,29 -34,7 C -34,-15 -21,-34 0,-34 Z
+            M -31,-20 L -25,-46 L -11,-30 Z
+            M 31,-20 L 11,-30 L 25,-46 Z
+            M -15,-6 m -11,0 a 11,11 0 1,0 22,0 a 11,11 0 1,0 -22,0 Z
+            M 15,-6 m -11,0 a 11,11 0 1,0 22,0 a 11,11 0 1,0 -22,0 Z`,
+
+  /* --- insectos --- */
+  // Las rayas de la abeja van con los vértices en sentido inverso al cuerpo,
+  // así la regla nonzero las vacía y quedan como bandas.
+  abeja:   `M -7,-16 C -27,-34 -51,-27 -53,-11 C -51,1 -27,-1 -7,-9 Z
+            M 7,-16 C 27,-34 51,-27 53,-11 C 51,1 27,-1 7,-9 Z
+            M 0,-40 m -11,0 a 11,11 0 1,0 22,0 a 11,11 0 1,0 -22,0 Z
+            M 0,-30 C 13,-30 17,-16 17,3 C 17,25 10,42 0,46 C -10,42 -17,25 -17,3 C -17,-16 -13,-30 0,-30 Z
+            M 16,-2 L -16,-2 L -16,8 L 16,8 Z
+            M 14,18 L -14,18 L -14,27 L 14,27 Z`,
+  escarabajo:`M 0,-46 m -12,0 a 12,9 0 1,0 24,0 a 12,9 0 1,0 -24,0 Z
+            M -30,-26 L -46,-38 L -44,-30 L -28,-19 Z
+            M 28,-19 L 44,-30 L 46,-38 L 30,-26 Z
+            M -33,0 L -50,0 L -50,7 L -31,7 Z
+            M 31,7 L 50,7 L 50,0 L 33,0 Z
+            M -30,24 L -45,36 L -41,42 L -27,31 Z
+            M 27,31 L 41,42 L 45,36 L 30,24 Z
+            M 0,-30 C 21,-30 32,-11 32,11 C 32,32 18,46 0,46 C -18,46 -32,32 -32,11 C -32,-11 -21,-30 0,-30 Z
+            M 2,-26 L -2,-26 L -2,42 L 2,42 Z`,
+  arania:  `M 0,-20 m -13,0 a 13,13 0 1,0 26,0 a 13,13 0 1,0 -26,0 Z
+            M 0,16 m -20,0 a 20,25 0 1,0 40,0 a 20,25 0 1,0 -40,0 Z
+            M -10,-22 L -44,-46 L -50,-38 L -12,-16 Z
+            M 10,-22 L 12,-16 L 50,-38 L 44,-46 Z
+            M -12,-10 L -52,-16 L -53,-7 L -12,-4 Z
+            M 12,-10 L 12,-4 L 53,-7 L 52,-16 Z
+            M -12,2 L -52,12 L -49,20 L -11,8 Z
+            M 12,2 L 11,8 L 49,20 L 52,12 Z
+            M -11,12 L -44,36 L -39,43 L -10,19 Z
+            M 11,12 L 10,19 L 39,43 L 44,36 Z`,
+
+  /* --- más aves --- */
+  golondrina:`M 0,-32 C 5,-23 8,-14 10,-6 L 55,11 C 38,7 21,7 8,12
+            L 14,45 L 0,31 L -14,45 L -8,12
+            C -21,7 -38,7 -55,11 L -10,-6 C -8,-14 -5,-23 0,-32 Z`,
+  colibri: `M 0,-16 C 8,-16 12,-6 12,7 C 12,22 6,36 0,41 C -6,36 -12,22 -12,7 C -12,-6 -8,-16 0,-16 Z
+            M 0,-20 m -11,0 a 11,11 0 1,0 22,0 a 11,11 0 1,0 -22,0 Z
+            M -3,-30 L 0,-54 L 3,-30 Z
+            M -8,-8 C -30,-30 -52,-19 -50,-1 C -46,12 -24,5 -8,0 Z
+            M 8,0 C 24,5 46,12 50,-1 C 52,-19 30,-30 8,-8 Z`,
+  // La pluma de pavo real: el ojo va hueco, con el trazado invertido.
+  plumaPavo:`M 0,-48 C 24,-32 28,-2 15,26 C 9,39 -9,39 -15,26 C -28,-2 -24,-32 0,-48 Z
+            M 0,-16 m -13,0 a 13,17 0 1,0 26,0 a 13,17 0 1,0 -26,0 Z
+            M 2,10 L -2,10 L -2,48 L 2,48 Z`,
+
+  /* --- marinos --- */
+  estrellaMar:`M 0,-46 Q 14,-20 44,-14 Q 24,4 27,37 Q 0,24 -27,37 Q -24,4 -44,-14 Q -14,-20 0,-46 Z`,
+  concha:  `M 0,40 L -44,-10 Q -38,-26 -26,-21 Q -20,-34 -9,-27 Q 0,-38 9,-27
+            Q 20,-34 26,-21 Q 38,-26 44,-10 Z`,
+  medusa:  `M -34,2 C -34,-26 -16,-42 0,-42 C 16,-42 34,-26 34,2 C 20,9 -20,9 -34,2 Z
+            M -24,6 C -28,20 -20,28 -24,44 L -17,44 C -13,28 -21,20 -17,6 Z
+            M -8,8 C -12,22 -4,30 -8,46 L -1,46 C 3,30 -5,22 -1,8 Z
+            M 10,8 C 6,22 14,30 10,46 L 17,46 C 21,30 13,22 17,8 Z
+            M 25,6 C 21,20 29,28 25,44 L 32,44 C 36,28 28,20 32,6 Z`,
+  cangrejo:`M 0,6 m -32,0 a 32,22 0 1,0 64,0 a 32,22 0 1,0 -64,0 Z
+            M -28,-14 L -40,-26 L -50,-22 L -44,-34 L -34,-38 L -22,-24 Z
+            M 22,-24 L 34,-38 L 44,-34 L 50,-22 L 40,-26 L 28,-14 Z
+            M -30,16 L -48,22 L -46,30 L -28,24 Z
+            M 28,24 L 46,30 L 48,22 L 30,16 Z
+            M -26,26 L -40,40 L -34,46 L -22,32 Z
+            M 22,32 L 34,46 L 40,40 L 26,26 Z`,
+  // Cuerpo estrecho, aleta dorsal bien salida y cola grande: con el cuerpo
+  // ovalado y la cola pequeña se leían como un pez cualquiera.
+  delfin:  `M 0,-48 C 9,-46 13,-32 12,-16 C 11,0 8,16 5,28 L 8,34
+            C 20,42 26,50 24,58 L 0,44 L -24,58 C -26,50 -20,42 -8,34 L -5,28
+            C -8,16 -11,0 -12,-16 C -13,-32 -9,-46 0,-48 Z
+            M 11,-18 C 28,-26 40,-12 33,2 C 24,-2 14,-8 11,-12 Z
+            M -11,4 C -24,2 -32,10 -28,18 C -20,16 -13,12 -11,8 Z`,
+  ballena: `M 0,-46 C 15,-42 22,-26 21,-8 C 20,8 16,22 11,32 L 15,38
+            C 27,46 32,54 30,60 L 0,46 L -30,60 C -32,54 -27,46 -15,38 L -11,32
+            C -16,22 -20,8 -21,-8 C -22,-26 -15,-42 0,-46 Z
+            M 20,-12 C 36,-18 46,-4 40,8 C 31,4 22,-4 20,-8 Z
+            M -20,10 C -36,10 -44,20 -39,28 C -30,25 -22,18 -20,14 Z
+            M 0,-40 m -5,0 a 5,5 0 1,0 10,0 a 5,5 0 1,0 -10,0 Z`,
+
+  /* --- más bichos y mamíferos --- */
+  // Los puntos y la raya van con el trazado invertido para que queden huecos.
+  mariquita:`M 0,-24 C 23,-24 36,-6 36,14 C 36,35 20,48 0,48 C -20,48 -36,35 -36,14
+            C -36,-6 -23,-24 0,-24 Z
+            M 0,-32 m -14,0 a 14,12 0 1,1 28,0 a 14,12 0 1,1 -28,0 Z
+            M 2,-22 L -2,-22 L -2,46 L 2,46 Z
+            M -17,4 m -7,0 a 7,7 0 1,0 14,0 a 7,7 0 1,0 -14,0 Z
+            M 17,4 m -7,0 a 7,7 0 1,0 14,0 a 7,7 0 1,0 -14,0 Z
+            M -14,28 m -6,0 a 6,6 0 1,0 12,0 a 6,6 0 1,0 -12,0 Z
+            M 14,28 m -6,0 a 6,6 0 1,0 12,0 a 6,6 0 1,0 -12,0 Z`,
+  conejo:  `M -24,6 C -24,-12 -12,-22 0,-22 C 12,-22 24,-12 24,6 C 24,24 12,34 0,34
+            C -12,34 -24,24 -24,6 Z
+            M -13,-16 C -22,-38 -18,-50 -11,-48 C -5,-46 -6,-30 -8,-16 Z
+            M 13,-16 C 6,-30 5,-46 11,-48 C 18,-50 22,-38 13,-16 Z`,
+  // Orejas bien salidas y trompa larga y estrecha: sin eso el elefante se lee
+  // como tres bultos pegados.
+  elefante:`M -20,-18 C -20,-34 -9,-42 0,-42 C 9,-42 20,-34 20,-18 L 20,-4
+            C 20,4 16,9 11,10 L 7,44 C 7,50 -7,50 -7,44 L -11,10
+            C -16,9 -20,4 -20,-4 Z
+            M -20,-24 C -48,-34 -58,-6 -48,16 C -40,33 -22,22 -20,6 Z
+            M 20,6 C 22,22 40,33 48,16 C 58,-6 48,-34 20,-24 Z
+            M -5,44 C -5,52 5,52 5,44 L 5,36 L -5,36 Z`,
+  rana:    `M 0,-18 C 16,-18 26,-4 26,12 C 26,28 14,38 0,38 C -14,38 -26,28 -26,12
+            C -26,-4 -16,-18 0,-18 Z
+            M -15,-24 m -11,0 a 11,11 0 1,0 22,0 a 11,11 0 1,0 -22,0 Z
+            M 15,-24 m -11,0 a 11,11 0 1,0 22,0 a 11,11 0 1,0 -22,0 Z
+            M -24,16 C -40,20 -46,34 -38,44 L -30,40 C -34,32 -28,26 -20,26 Z
+            M 20,26 C 28,26 34,32 30,40 L 38,44 C 46,34 40,20 24,16 Z
+            M -22,-4 L -40,-12 L -42,-3 L -24,4 Z
+            M 24,4 L 42,-3 L 40,-12 L 22,-4 Z`
+};
+
+/* --- Piezas estructurales del yantra --- */
+
+// Un lado del bhupura (el marco cuadrado). Va de esquina a esquina; el
+// renderer lo repite 4 veces con rotate(90) para cerrar el cuadrado.
+// Con prof > 0 lleva la puerta en T hacia afuera del punto cardinal.
+function ladoBhupura(S, ancho, prof, alas){
+  if (!prof) return `M ${-S},${-S} L ${S},${-S}`;
+  const a = ancho / 2, e = alas, d = prof, d1 = prof * 0.42;
+  return `M ${-S},${-S} L ${-a},${-S} L ${-a},${-S-d1} L ${-a-e},${-S-d1} `
+       + `L ${-a-e},${-S-d} L ${a+e},${-S-d} L ${a+e},${-S-d1} L ${a},${-S-d1} `
+       + `L ${a},${-S} L ${S},${-S}`;
+}
+
+// Nueve triángulos entrelazados: 4 hacia arriba (Shiva) y 5 hacia abajo
+// (Shakti), todos con las esquinas de la base apoyadas en el mismo círculo.
+const TRI_ARRIBA = [[1.00,0.42],[0.86,0.16],[0.60,0.64],[0.32,0.88]];
+const TRI_ABAJO  = [[1.00,0.42],[0.88,0.14],[0.66,0.62],[0.36,0.86],[0.12,0.96]];
+function trianguloYantra(R, apice, base, abajo){
+  const s  = abajo ? -1 : 1;
+  const yA = s * -R * apice;
+  const yB = s *  R * base;
+  const w  = Math.sqrt(Math.max(R*R - yB*yB, 1));
+  return `M 0,${yA.toFixed(1)} L ${(-w).toFixed(1)},${yB.toFixed(1)} L ${w.toFixed(1)},${yB.toFixed(1)} Z`;
+}
+
+/* Núcleos del yantra. La semilla elige uno, así que el corazón del mandala
+   cambia de una generación a otra en vez de ser siempre el mismo.
+   Firma: (add, R, grosor, rnd, N).                                        */
+const NUCLEOS = {
+  // Sri Yantra: los nueve triángulos entrelazados.
+  sriYantra(add, R, g){
+    TRI_ARRIBA.forEach(([a, b]) => add(trianguloYantra(R, a, b, false), 1, 0, true, g));
+    TRI_ABAJO .forEach(([a, b]) => add(trianguloYantra(R, a, b, true ), 1, 0, true, g));
+  },
+  // Shatkona: dos triángulos equiláteros entrelazados (Shiva y Shakti).
+  shatkona(add, R, g){
+    add(`M ${P(0,R)} L ${P(120,R)} L ${P(240,R)} Z`, 1, 0, true, g * 1.4);
+    add(`M ${P(60,R)} L ${P(180,R)} L ${P(300,R)} Z`, 1, 0, true, g * 1.4);
+    add(circuloPath(0, 0, R * 0.5), 1, 0, true, g * 0.8);
+  },
+  // Ashtakona: dos cuadrados girados 45°, estrella de ocho puntas.
+  ashtakona(add, R, g){
+    add(`M ${P(0,R)} L ${P(90,R)} L ${P(180,R)} L ${P(270,R)} Z`, 1, 0, true, g * 1.3);
+    add(`M ${P(45,R)} L ${P(135,R)} L ${P(225,R)} L ${P(315,R)} Z`, 1, 0, true, g * 1.3);
+    add(circuloPath(0, 0, R * 0.44), 1, 0, true, g * 0.8);
+  },
+  // Chakra: rueda de radios con cubo central.
+  chakra(add, R, g, rnd, N){
+    const k = Math.max(8, Math.min(24, N * 2));
+    add(circuloPath(0, 0, R), 1, 0, true, g * 1.3);
+    add(`M ${P(0, R*0.3)} L ${P(0, R)}`, k, 0, true, g * 1.1);
+    add(circuloPath(0, 0, R * 0.62), 1, 0, true, g * 0.7);
+  },
+  // Loto central de ocho o doce pétalos.
+  lotoCentro(add, R, g, rnd, N){
+    const k = rnd() < 0.5 ? 8 : 12;
+    add(MOTIVOS.loto(R * 0.24, R, 180 / k).d, k, 0, false, 0);
+    add(MOTIVOS.loto(R * 0.36, R * 0.86, 180 / k * 0.55).d, k, 0, true, g * 0.7);
+    add(circuloPath(0, 0, R), 1, 0, true, g * 0.9);
+  },
+  // Navayoni: triángulos concéntricos alternando el sentido.
+  navayoni(add, R, g){
+    [1, 0.76, 0.54, 0.34].forEach((f, i) =>
+      add(trianguloYantra(R * f, 1, 0.5, i % 2 === 1), 1, 0, true, g));
+    add(circuloPath(0, 0, R), 1, 0, true, g * 0.8);
+  },
+  // Estrella radiante: puntas macizas saliendo del bindu.
+  rayosEstrella(add, R, g, rnd, N){
+    const k = Math.max(8, Math.min(32, N * 2));
+    const hw = 180 / k * 0.6;
+    add(`M ${P(0,R)} L ${P(-hw, R*0.2)} L ${P(hw, R*0.2)} Z`, k, 0, false, 0);
+    add(circuloPath(0, 0, R), 1, 0, true, g * 0.9);
+  },
+
+  /* --- núcleos fractales ---
+     El yantra ya es autosimilar por naturaleza (triángulos dentro de
+     triángulos); estos lo hacen explícito. */
+  // Sierpinski: el triángulo repetido dentro de sí mismo, cuatro niveles.
+  sierpinskiYantra(add, R, g){
+    add(sierpinski(R, 4), 1, 0, false, 0);
+    add(circuloPath(0, 0, R), 1, 0, true, g);
+  },
+  // Shatkona anidada: la misma estrella a escalas decrecientes, girando.
+  shatkonaFractal(add, R, g){
+    [[1, 0], [0.56, 30], [0.31, 0], [0.17, 30]].forEach(([f, rot], i) => {
+      add(`M ${P(rot,R*f)} L ${P(rot+120,R*f)} L ${P(rot+240,R*f)} Z`, 1, 0, true, g * (1.4 - i*0.22));
+      add(`M ${P(rot+60,R*f)} L ${P(rot+180,R*f)} L ${P(rot+300,R*f)} Z`, 1, 0, true, g * (1.4 - i*0.22));
+    });
+  },
+  // Copo de Koch: el borde infinito, en dos orientaciones superpuestas.
+  kochYantra(add, R, g){
+    add(copoKoch(R, 3), 1, 0, true, g * 1.2);
+    add(copoKoch(R * 0.62, 2), 1, 180, true, g);
+    add(circuloPath(0, 0, R * 0.24), 1, 0, false, 0);
+  },
+  // Sri Yantra que se contiene a sí mismo a media escala.
+  sriYantraFractal(add, R, g){
+    [[1, 0], [0.44, 180]].forEach(([f, rot], i) => {
+      TRI_ARRIBA.forEach(([a, b]) => add(trianguloYantra(R*f, a, b, false), 1, rot, true, g * (1 - i*0.3)));
+      TRI_ABAJO .forEach(([a, b]) => add(trianguloYantra(R*f, a, b, true ), 1, rot, true, g * (1 - i*0.3)));
+    });
+  }
+};
+const NOMBRES_NUCLEOS = Object.keys(NUCLEOS);
+
+/* =========================================================================
+   4. GENERADORES
+   ========================================================================= */
+function repeticionesArmonicas(N, rnd){
+  const opts = new Set([N]);
+  for (let d = 4; d <= N; d++) if (N % d === 0) opts.add(d);
+  if (N * 2 <= 96) opts.add(N * 2);
+  const arr = [...opts].filter(v => v >= 3 && v <= 96);
+  return arr.length ? elegir(rnd, arr) : N;
+}
+
+/* Repeticiones elegidas por la proporción de la banda: busca que el motivo
+   quede aproximadamente tan ancho como alto, y luego se queda con el valor
+   armónico más cercano. Sin esto, una banda ancha con pocas repeticiones
+   deja huecos enormes entre figura y figura.                              */
+// `prop` = ancho deseado del motivo como fracción de su alto. 0.95 ≈ tan ancho
+// como alto (el caso general); ~0.5 para pétalos, que son alargados y por eso
+// caben muchos más en la misma circunferencia.
+function repeticionesParaBanda(N, mid, alto, rnd, prop){
+  const ideal = Math.max(4, Math.round(2 * Math.PI * mid / Math.max(alto * (prop ?? 0.95), 12)));
+  const opts = new Set([N]);
+  for (let d = 4; d <= N; d++) if (N % d === 0) opts.add(d);
+  for (let m = 2; m <= 8; m++) if (N * m <= 96) opts.add(N * m);
+  const arr = [...opts].filter(v => v >= 3 && v <= 96)
+                       .sort((a, b) => Math.abs(a - ideal) - Math.abs(b - ideal));
+  if (!arr.length) return N;
+  return arr[rnd() < 0.75 ? 0 : Math.min(1, arr.length - 1)];
+}
+
+/* Reparto de bandas radiales concéntricas, compartido por varios estilos.
+   Devuelve [radioInterno, radioExterno, altoTotal] por anillo.            */
+function bandas(cfg, rnd, creciente, hueco, solape){
+  creciente = creciente ?? 0.10; hueco = hueco ?? 0.93; solape = solape ?? 0;
+  const pesos = [];
+  for (let i = 0; i < cfg.anillos; i++) pesos.push(0.6 + rnd() * 0.75 + i * creciente);
+  const suma = pesos.reduce((a, b) => a + b, 0);
+  const out = [];
+  let r = R_MIN;
+  for (let i = 0; i < cfg.anillos; i++){
+    const alto = (R_MAX - R_MIN) * pesos[i] / suma;
+    // Cada anillo muerde hacia dentro del anterior. Como se dibuja después,
+    // queda por encima: eso es lo que produce la sensación de trenzado y lo
+    // que cierra las zonas blancas que quedaban entre anillo y anillo.
+    const r0 = i === 0 ? r : Math.max(R_MIN * 0.6, r - alto * solape);
+    out.push([r0, r + alto * hueco, r + alto * hueco - r0]);
+    r += alto;
+  }
+  return out;
+}
+
+/* --- Motor de anillos concéntricos, parametrizado por vocabulario.
+       Lo usan el estilo geométrico y el africano: misma estructura,
+       repertorio de motivos y carácter de trazo distintos.               --- */
+function generarAnillos(semilla, cfg, voc){
+  const rnd = mulberry32(semilla >>> 0);
+  const N = cfg.simetria;
+  const dens = cfg.densidad / 100;
+  const motivosDisp = voc.motivos.slice(0, Math.max(3, Math.min(voc.motivos.length, limites().motivos)));
+
+  const pesos = [];
+  for (let i = 0; i < cfg.anillos; i++) pesos.push(0.6 + rnd() * 0.75 + i * 0.10);
+  const suma = pesos.reduce((a, b) => a + b, 0);
+
+  const partes = [];
+  let r = R_MIN, previo = null;
+  // Fase del trenzado: los anillos alternan medio sector de desfase, así las
+  // puntas de uno caen en los huecos del siguiente en vez de enfrentarse.
+  const fase = rnd() < 0.5 ? 0 : 1;
+
+  partes.push({ d: circuloPath(0, 0, R_MIN * 0.82), k: 1, off: 0, trazo: false, grosor: 0 });
+
+  for (let i = 0; i < cfg.anillos; i++){
+    const alto = (R_MAX - R_MIN) * pesos[i] / suma;
+    const rBase = r;
+    r += alto;
+    // El anillo muerde hacia dentro del anterior y se asoma sobre el siguiente.
+    const r0 = i === 0 ? rBase : Math.max(R_MIN * 0.6, rBase - alto * voc.solape);
+    const r1 = rBase + alto * voc.hueco;
+    const altoEf = r1 - r0;
+
+    // En bandas anchas solo entran motivos que llenan; en las finas, cualquiera.
+    let repertorio = motivosDisp;
+    if (altoEf > 68){
+      const filtrado = motivosDisp.filter(m => MOTIVOS_LLENADORES.includes(m));
+      if (filtrado.length) repertorio = filtrado;
+    }
+    let motivo = elegir(rnd, repertorio);
+    if (motivo === previo) motivo = elegir(rnd, repertorio);
+    previo = motivo;
+
+    // Proporcionadas a la banda: con la regla armónica a secas salían pocas
+    // figuras muy separadas entre sí dentro del mismo anillo.
+    const k  = repeticionesParaBanda(N, (r0 + r1) / 2, altoEf, rnd);
+    const hw = (180 / k) * entre(rnd, voc.ancho[0], voc.ancho[1]);
+    const m  = MOTIVOS[motivo](r0, r1, hw, rnd);
+    const zB = -(r0 + r1) / 2;          // profundidad: más lejos del centro, más al fondo
+
+    partes.push({
+      d: m.d, k, off: ((i + fase) % 2) ? 180 / k : 0, evenodd: !!m.evenodd, z: zB,
+      trazo: !!m.trazo, grosor: m.trazo ? entre(rnd, voc.grosor[0], voc.grosor[1]) : 0
+    });
+
+    // Tira de textura pegada al borde interior del anillo. En los tejidos de
+    // referencia una cenefa nunca es una fila sola: es una franja de figuras
+    // más una tira de rayas, puntos o greca justo debajo.
+    if (voc.compuesto && altoEf > 40 && rnd() < 0.28 + dens * 0.68){
+      const sec = elegir(rnd, voc.compuesto);
+      const ra = r0 + altoEf * 0.02, rb = r0 + altoEf * 0.22;
+      const kS = repeticionesParaBanda(N, (ra + rb) / 2, rb - ra, rnd);
+      const mS = MOTIVOS[sec](ra, rb, 180 / kS, rnd);
+      partes.push({ d: mS.d, k: kS, off: 180 / kS, evenodd: !!mS.evenodd, z: zB,
+                    trazo: !!mS.trazo, grosor: mS.trazo ? entre(rnd, 3, 6) : 0 });
+    }
+
+    // Adornos que controla el deslizador de Detalle. Sin ellos el deslizador
+    // no cambiaba nada visible en estos estilos y no se entendía para qué era.
+    const offM = ((i + fase) % 2) ? 180 / k : 0;
+    if (!m.trazo && dens > 0.32 && altoEf > 30)
+      partes.push({ d: MOTIVOS[motivo](r0 + altoEf*0.20, r1 - altoEf*0.18, hw*0.55, rnd).d,
+                    k, off: offM, trazo: true, z: zB,
+                    grosor: entre(rnd, voc.grosor[0], voc.grosor[1]) * 0.45 });
+
+    if (rnd() < dens && altoEf > 40){
+      const k2 = repeticionesArmonicas(N, rnd);
+      const rr = Math.min(6 + dens * 8, altoEf * 0.16);
+      const [cx, cy] = pt(0, r0 + rr * 1.5);
+      partes.push({ d: circuloPath(cx, cy, rr), k: k2, off: 180 / k2, trazo: false, grosor: 0, z: zB });
+    }
+
+    // El aro va en el límite nominal, no en r1: con solape, r1 cae dentro del
+    // anillo siguiente y el aro se vería fuera de sitio.
+    if (rnd() < voc.aros || i === cfg.anillos - 1){
+      partes.push({ d: circuloPath(0, 0, r), k: 1, off: 0, trazo: true, z: -r,
+                    grosor: entre(rnd, voc.grosor[0], voc.grosor[1]) * 0.7 });
+    }
+  }
+  return { semilla, N, partes };
+}
+
+/* Roseta: florecilla de n pétalos en una caja de ±R, para las esquinas del
+   bhupura. Se construye con trigonometría en vez de rotaciones anidadas
+   porque tiene que caber en un solo path.                                 */
+function roseta(R, n, ancho){
+  // `ancho` controla lo gordo del pétalo. Con muchos pétalos hay que
+  // adelgazarlos o la flor se ve como un bulto.
+  const w = (ancho ?? 0.30) * Math.min(1, 8 / n);
+  let d = circuloPath(0, 0, R * 0.24);
+  for (let i = 0; i < n; i++){
+    const ar = i * 2 * Math.PI / n;
+    const ux = Math.sin(ar), uy = -Math.cos(ar);   // radial
+    const vx = Math.cos(ar), vy = Math.sin(ar);    // perpendicular
+    const p = (rr, ss) => `${(ux*rr + vx*ss).toFixed(1)},${(uy*rr + vy*ss).toFixed(1)}`;
+    d += ` M ${p(R*0.24,0)} C ${p(R*0.46, R*w)} ${p(R*0.86, R*w*0.62)} ${p(R,0)} `
+       + `C ${p(R*0.86,-R*w*0.62)} ${p(R*0.46,-R*w)} ${p(R*0.24,0)} Z`;
+  }
+  return d;
+}
+
+/* Cadena de perlas siguiendo el borde de un pétalo: los puntos se separan y se
+   vuelven a juntar acompañando el ancho de la figura. Es el remate que aparece
+   en casi toda lámina de mandala y no se consigue con un anillo de puntos
+   concéntrico, porque ese no sigue la forma. */
+function perlasDePetalo(r0, r1, hw, n, rr){
+  const h = r1 - r0;
+  let d = '';
+  for (let i = 1; i <= n; i++){
+    const t = i / (n + 1);
+    const rad = r0 + h * t, ang = hw * Math.sin(Math.PI * t) * 0.88;
+    const [ax, ay] = pt(ang, rad), [bx, by] = pt(-ang, rad);
+    d += circuloPath(ax, ay, rr) + ' ' + circuloPath(bx, by, rr) + ' ';
+  }
+  return d.trim();
+}
+
+// Ancho de la cuerda del pétalo en su punto más ancho.
+const cuerdaPetalo = (r0, r1, hw) => 2 * ((r0 + r1) / 2) * Math.sin(hw * D2R);
+
+/* Capa de pétalos DECORADA: pétalo grande, dos contornos interiores anidados,
+   cadena de perlas siguiendo el borde y una gota dentro. Un pétalo liso
+   repetido no se parece en nada a una lámina de mandala; lo que la hace es
+   esta acumulación de detalle dentro de cada pétalo.
+   `add` debe aceptar (d, k, off, trazo, grosor).                            */
+function capaPetalos(add, r0, r1, k, off, g, rnd, opts){
+  opts = opts || {};
+  const h = r1 - r0, sector = 180 / k;
+  // Los pétalos SÍ llenan su sector y se tocan: en las láminas de referencia
+  // no hay hueco entre ellos, el anillo va lleno. Lo que permite leerlos uno a
+  // uno es el contorno propio de más abajo, no el aire. Dejar hueco fue un
+  // error: se veía espaciado y perdía la densidad de flor.
+  const hw = sector * (opts.ancho ?? 0.99);
+  const forma = opts.forma || 'ojival';
+
+  // Cuando hay muchos pétalos son estrechos, y meterles el mismo detalle que a
+  // uno ancho solo produce ruido. El detalle se dosifica según la cuerda.
+  const cu = cuerdaPetalo(r0, r1, hw), ancho = cu / h;
+
+  // `detalle` (0..1) decide CUÁNTOS adornos lleva el pétalo. Es lo que hace
+  // que el deslizador de Detalle se note: a 0 el pétalo va limpio y a 100 lleva
+  // doble contorno, gota, perlas y nervaduras.
+  const det = opts.detalle ?? 1;
+
+  const dPetalo = MOTIVOS[forma](r0, r1, hw).d;
+  add(dPetalo, k, off, false, 0);                     // relleno
+  // Contorno propio y grueso: sin él, dos pétalos del mismo color se funden.
+  add(dPetalo, k, off, true, g * 1.7);
+  if (det > 0.12)
+    add(MOTIVOS[forma](r0 + h*0.14, r1 - h*0.10, hw*0.66).d, k, off, true, g);
+  if (h > 46 && ancho > 0.42 && det > 0.55)
+    add(MOTIVOS[forma](r0 + h*0.28, r1 - h*0.24, hw*0.40).d, k, off, true, g*0.8);
+
+  // Gota o punto en el corazón del pétalo.
+  if (h > 34 && cu > 12 && det > 0.25){
+    const [cx, cy] = pt(0, r0 + h * 0.34);
+    add(circuloPath(cx, cy, Math.min(h*0.075, cu*0.20, 6)), k, off, false, 0);
+  }
+  // Orla de perlas siguiendo el borde por dentro: con los pétalos tocándose,
+  // por fuera caerían encima del vecino.
+  if (opts.perlas !== false && h > 30 && cu > 16 && det > 0.38)
+    add(perlasDePetalo(r0 + h*0.06, r1 - h*0.03, hw*0.80, det > 0.75 ? 7 : 5,
+                       Math.max(Math.min(h*0.034, cu*0.12, 4.5), 1.5)), k, off, false, 0);
+  // Rayado interior: las nervaduras que llevan los pétalos de las láminas.
+  if (opts.rayado && cu > 22 && h > 40){
+    let dR = '';
+    for (let i = 1; i <= 4; i++){
+      const a = -hw*0.58 + hw*1.16*i/5;
+      dR += ` M ${P(a, r0 + h*0.26)} L ${P(a*0.30, r1 - h*0.16)}`;
+    }
+    add(dR.trim(), k, off, true, g*0.5);
+  }
+  // Festón bajo la base, como el borde dentado de las láminas.
+  if (opts.feston)
+    add(`M ${P(-hw*0.9, r0)} Q ${P(0, r0 - h*0.13)} ${P(hw*0.9, r0)}`, k, off, true, g*0.7);
+}
+
+/* --- Estilo hindú (yantra) ---
+   Estructura tradicional, de afuera hacia adentro:
+   bhupura (marco cuadrado con cuatro puertas) + rosetas en las esquinas →
+   collar de perlas y rayos → círculos concéntricos → orlas decorativas, cada
+   una con su contorno interior y su fila de puntos → anillo de loto exterior
+   → anillo de loto interior → nueve triángulos entrelazados → bindu.
+
+   El carácter que se busca es el de un mandala de libro para colorear:
+   línea fina, muchas capas anidadas, poco vacío.                          */
+function generarHindu(semilla, cfg){
+  const rnd  = mulberry32((semilla ^ 0x9E3779B9) >>> 0);
+  const N    = Math.max(6, cfg.simetria);
+  const dens = cfg.densidad / 100;
+  const partes = [];
+  let zB = 0;   // profundidad de la zona en curso (ver cuerpoMandala)
+  const add = (d, k, off, trazo, grosor, tr) =>
+    partes.push({ d, k: k || 1, off: off || 0, trazo: !!trazo, grosor: grosor || 0, tr: tr || '', z: zB });
+  const fino = 1.5 + dens * 1.7;   // línea fina: es lo que da el aire de lámina para colorear
+
+  // Los aros y collares llevan la profundidad de su propio radio, no la de la
+  // zona en curso, para que el orden de dibujado siga siendo de fuera adentro.
+  const dobleCirculo = (rad, g) => {
+    const z0 = zB; zB = -rad;
+    add(circuloPath(0, 0, rad), 1, 0, true, g);
+    add(circuloPath(0, 0, rad - 6), 1, 0, true, g * 0.55);
+    zB = z0;
+  };
+  // Collar de perlas: hilera de puntos sobre una circunferencia.
+  const collar = (rad, k, rr) => {
+    const z0 = zB; zB = -rad;
+    const [cx, cy] = pt(0, rad);
+    add(circuloPath(cx, cy, rr), k, 180 / k, false, 0);
+    zB = z0;
+  };
+  const rayos = (ra, rb, k, g) => add(`M ${P(0,ra)} L ${P(0,rb)}`, k, 180 / k, true, g);
+
+  // --- Bhupura: el marco cuadrado con las cuatro puertas en T ---
+  // No siempre: es el elemento del yantra, pero la lámina de mandala floral
+  // clásica no lo lleva y su contorno lo dibujan las puntas de los pétalos.
+  // La semilla decide, así que salen de los dos tipos.
+  const conMarco = rnd() < 0.45;
+  const S = 390;
+  if (conMarco){
+    zB = -S - 20;                     // el marco, al fondo de todo
+    add(ladoBhupura(S, 128, 46, 28), 4, 0, true, fino * 2.0);
+    add(ladoBhupura(S - 18, 0, 0, 0), 4, 0, true, fino * 1.2);
+    add(ladoBhupura(S - 29, 0, 0, 0), 4, 0, true, fino * 0.8);
+
+    // Rosetas en las cuatro esquinas: sin ellas el cuadrado queda hueco.
+    const cE = S - 68, rE = 52;
+    zB = -cE * 1.41;
+    add(roseta(rE, 8), 4, 0, false, 0, ` translate(${cE},${-cE})`);
+    add(roseta(rE * 0.55, 8), 4, 0, true, fino * 0.8, ` translate(${cE},${-cE})`);
+  }
+
+  // Sin marco, los pétalos llegan casi al borde y el contorno queda lobulado.
+  const R_INT = conMarco ? 322 : 436;
+  if (conMarco){
+    zB = -348;
+    rayos(R_INT + 4, 344, Math.min(96, N * 2), fino * 0.7);
+    collar(352, Math.min(96, N * 4), 6 + dens * 3);
+  }
+
+  // --- Reparto radial ---
+  // Las separaciones se descuentan ANTES de repartir; si no, se comen el
+  // núcleo de triángulos, que es el corazón del yantra y debe dominar.
+  const SEP = 9;
+  // En las láminas de referencia el mandala son CAPAS DE PÉTALOS grandes y
+  // superpuestas —tres o cuatro—, no dos anillos de pétalos perdidos entre
+  // muchas orlas finas. Las orlas quedan como remate entre capa y capa.
+  const nOrlas = Math.min(2, Math.max(0, cfg.anillos - 6));
+  const nCapas = Math.max(3, Math.min(6, cfg.anillos - 1));
+  // Las capas se generan de fuera adentro (c = 0 es la exterior). El peso CRECE
+  // hacia el centro: los pétalos de dentro son grandes y van menguando hacia
+  // fuera, como en las láminas de referencia.
+  const pesoCapa = c => 0.80 + c * 0.24;
+  const pYantra = 0.95, pOrla = 0.40;
+  let sumaCapas = 0;
+  for (let c = 0; c < nCapas; c++) sumaCapas += pesoCapa(c);
+  const sumaPesos = pYantra + sumaCapas + nOrlas * pOrla;
+  const u = (R_INT - (1 + nCapas + nOrlas) * SEP) / sumaPesos;
+  // Cada zona se asoma hacia FUERA sobre la anterior. Como el orden de
+  // dibujado va de fuera adentro, la zona interior queda encima: es el efecto
+  // de flor abierta. `r0` no se mueve, así que el reparto radial no cambia.
+  // Solape generoso: en una flor abierta la punta de una capa entra bien
+  // adentro de la siguiente. Con poco solape las capas se ven como anillos
+  // apilados en vez de como pétalos montados.
+  const SOL = Math.min(u * 0.55, SEP + 34);
+  let r = R_INT;
+
+  // Sin marco no se dibuja el círculo exterior: si estuviera, el contorno del
+  // mandala volvería a ser una circunferencia perfecta en vez de las puntas.
+  if (conMarco) dobleCirculo(r, fino);
+
+  // --- Orlas decorativas: motivo + contorno interior + fila de puntos ---
+  // Van DESPUÉS de las capas de pétalos, o sea hacia dentro. Puestas fuera se
+  // comían el borde con anillos finos y los pétalos no llegaban al contorno,
+  // que es justo lo contrario de lo que hacen las láminas de referencia.
+  const orlas = ['loto','paisley','petalo','gota','escama','punto','radial','triangulo','rombo'];
+  const dibujarOrlas = () => {
+  let kPrev = 0;
+  for (let i = 0; i < nOrlas; i++){
+    const alto = u * pOrla;
+    const r0 = r - SEP - alto, r1 = r - SEP + SOL;
+    if (r0 < 40) break;
+    zB = -(r0 + r1) / 2;
+    const fasePar = (i % 2) ? 1 : 0;
+    // Una orla de cada tantas lleva mini-yantras: el mandala contiene copias
+    // de sí mismo. Es la autosimilitud que ya está implícita en el Sri Yantra,
+    // hecha explícita.
+    if (rnd() < 0.3 && alto > 26){
+      const mF = (r0 + r1) / 2;
+      const kF = repeticionesParaBanda(N, mF, r1 - r0, rnd);
+      const cu = 2 * mF * Math.sin(180 / kF * D2R);
+      const sF = Math.min(r1 - r0, cu) / 104;
+      const trF = ` translate(0,${(-mF).toFixed(1)}) scale(${sF.toFixed(3)})`;
+      const pieza = rnd() < 0.5
+        ? `M ${P(0,50)} L ${P(120,50)} L ${P(240,50)} Z M ${P(60,50)} L ${P(180,50)} L ${P(300,50)} Z`
+        : sierpinski(50, 3);
+      add(pieza, kF, fasePar ? 180 / kF : 0, false, 0, trF);
+      r = r0;
+      add(circuloPath(0, 0, r), 1, 0, true, fino * 0.75);
+      continue;
+    }
+    const tipo = elegir(rnd, orlas);
+    // Repeticiones proporcionadas a la banda: con `repeticionesArmonicas` a
+    // secas salían pocas figuras muy separadas y quedaba mucho blanco.
+    let k = repeticionesParaBanda(N, (r0 + r1) / 2, r1 - r0, rnd);
+    // Para que los pétalos de un anillo caigan ENTRE los del anillo de fuera,
+    // las repeticiones se encajan a la mitad, el mismo número o el doble. Con
+    // cuentas dispares el desfase de medio sector no intercala nada.
+    if (kPrev){
+      const cand = [kPrev/2, kPrev, kPrev*2].filter(v => Number.isInteger(v) && v >= 4 && v <= 96);
+      if (cand.length) k = cand.reduce((a, b) => Math.abs(b - k) < Math.abs(a - k) ? b : a);
+    }
+    kPrev = k;
+    const esTrazo = !!MOTIVOS[tipo](r0, r1, 1).trazo;
+    const hw = (180 / k) * (esTrazo ? 1 : entre(rnd, 0.96, 1));
+    const off = fasePar ? 180 / k : 0;
+    // Las orlas de pétalo van decoradas como las capas grandes; el resto, no.
+    if (!esTrazo && (tipo === 'loto' || tipo === 'petalo') && (r1 - r0) > 30){
+      capaPetalos(add, r0, r1, k, off, fino * 0.7, rnd,
+                  { forma:'ojival', detalle: dens, perlas:(r1-r0) > 42 });
+    } else {
+      add(MOTIVOS[tipo](r0, r1, hw, rnd).d, k, off, esTrazo, esTrazo ? fino : 0);
+      // Copia interior de contorno: es lo que multiplica el detalle sin
+      // añadir figuras nuevas, y deja más zonas para colorear.
+      if (!esTrazo && (r1 - r0) > 22)
+        add(MOTIVOS[tipo](r0 + alto*0.24, r1 - alto*0.30, hw*0.52, rnd).d, k, off, true, fino * 0.7);
+    }
+    r = r0;
+    if (rnd() < 0.55) collar(r + alto*0.5, Math.min(96, k * 2), Math.min(alto*0.1, 4.5));
+    // Un solo aro por defecto: doblarlos todos convierte el mandala en
+    // una sopa de circunferencias y se pierden las figuras.
+    if (rnd() < 0.35) dobleCirculo(r, fino * 0.75);
+    else { const z0 = zB; zB = -r; add(circuloPath(0, 0, r), 1, 0, true, fino * 0.75); zB = z0; }
+  }
+  };
+
+  // --- Capas de pétalos: el cuerpo de la flor, y lo PRIMERO que se reparte ---
+  // La forma se fija por mandala para que las capas sean coherentes entre sí.
+  const formaPetalo = elegir(rnd, ['ojival','ojival','ojival','loto']);
+  // Las capas alternan N y 2N pétalos, y media vuelta de desfase, para que los
+  // de una caigan entre los de la otra. Se solapan mucho: en una flor abierta
+  // los pétalos se montan, no se tocan de canto.
+  let kCapa = 0, cuerdaBase = 0;
+  for (let c = 0; c < nCapas; c++){
+    const r0c = r - SEP - u * pesoCapa(c);
+    // La capa exterior no se asoma hacia fuera cuando no hay marco: su punta
+    // ES el borde del mandala.
+    const r1c = (c === 0 && !conMarco) ? r : r - SEP + SOL * 1.6;
+    if (r0c < 30) break;
+    const midC = (r0c + r1c) / 2;
+    // El número de pétalos sale de la circunferencia disponible, no de un N
+    // fijo: por eso las capas de fuera llevan muchos más que las de dentro,
+    // que es exactamente lo que hace una flor abierta.
+    // Cada capa lleva TANTOS pétalos como quepan manteniendo una proporción de
+    // pétalo esbelto (ancho ≈ 0.75 del alto). Como el alto crece hacia dentro,
+    // el pétalo interior sale más grande igualmente, pero sin quedarse en
+    // cuatro figuras sueltas: el suelo es 10.
+    // Fijar una cuerda que creciera un 30% por capa —lo anterior— hundía el
+    // número hasta 6 pétalos en la capa interior y el anillo se veía vacío.
+    const kIdeal = 2 * Math.PI * midC / Math.max((r1c - r0c) * 0.75, 12);
+    const kC = Math.max(10, Math.min(40, 2 * Math.round(kIdeal / 2)));
+    kCapa = kC;
+    zB = -midC;
+    capaPetalos(add, r0c, r1c, kC, (c % 2) ? 180 / kC : 0, fino * 0.75, rnd,
+                { forma: formaPetalo, detalle: dens,
+                  feston: c === 0 && conMarco, rayado: rnd() < dens });
+    r = r0c;
+    // Nada de aros entre capa y capa: dejaban una banda blanca visible y
+    // rompían la continuidad de la flor. Solo un collar de perlas de vez en
+    // cuando, que rellena en vez de separar.
+    if (rnd() < dens * 0.8) collar(r + u * pesoCapa(c) * 0.45, Math.min(96, kC * 2), 3.2);
+  }
+  dobleCirculo(r, fino * 0.8);   // un único aro, ya bajo la última capa
+
+  dibujarOrlas();
+  collar(r - 9, Math.min(96, N * 2), 3.5);
+
+  // --- Núcleo: la semilla elige cuál de los siete ---
+  const Ry = Math.max(r - SEP * 2.2, 34);
+  zB = -Ry;
+  add(circuloPath(0, 0, Ry + 5), 1, 0, true, fino * 0.6);
+  const nucleo = elegir(rnd, NOMBRES_NUCLEOS);
+  NUCLEOS[nucleo](add, Ry, fino, rnd, N);
+
+  // --- Bindu: punto central con dos aros ---
+  zB = 0;                            // lo más cercano al centro, encima de todo
+  const rb = Math.max(Ry * 0.085, 5);
+  add(circuloPath(0, 0, rb * 2.6), 1, 0, true, fino * 0.6);
+  add(circuloPath(0, 0, rb * 1.7), 1, 0, true, fino * 0.8);
+  add(circuloPath(0, 0, rb), 1, 0, false, 0);
+
+  return { semilla, N, partes };
+}
+
+/* --- Estilo circuitos: buses concéntricos, trazas con quiebre, pads y chips --- */
+function generarCircuito(semilla, cfg){
+  const rnd = mulberry32((semilla ^ 0x2C1B3F5D) >>> 0);
+  const N = cfg.simetria, dens = cfg.densidad / 100;
+  const partes = [];
+  let zB = 0;   // profundidad de la banda en curso (ver cuerpoMandala)
+  const add = (d, k, off, trazo, grosor, eo) =>
+    partes.push({ d, k: k || 1, off: off || 0, trazo: !!trazo, grosor: grosor || 0, evenodd: !!eo, z: zB });
+  const g = 2.4 + dens * 2.6;
+
+  // --- Borde del die ---
+  // Antes era siempre el mismo anillo de pads gordos, y con lo oscuro que es se
+  // comía la mandala entera: seis semillas distintas daban seis bordes idénticos.
+  const kPads = Math.min(96, Math.max(8, N * 2));
+  const borde = elegir(rnd, ['pads','datos','escala']);
+  if (borde === 'pads')
+    add(MOTIVOS.padIO(R_MAX - 42, R_MAX, 180 / kPads * 0.62).d, kPads, 0, false, 0);
+  else if (borde === 'datos')
+    add(MOTIVOS.anilloDatos(R_MAX - 34, R_MAX, 180 / Math.max(6, Math.round(kPads/4)) * 0.96).d,
+        Math.max(6, Math.round(kPads / 4)), 0, false, 0);
+  else
+    add(MOTIVOS.escalaRadial(R_MAX - 38, R_MAX, 180 / Math.max(8, Math.round(kPads/3)) * 0.96).d,
+        Math.max(8, Math.round(kPads / 3)), 0, false, 0);
+
+  // --- Anillos de potencia VDD / VSS ---
+  add(circuloPath(0, 0, R_MAX - 52), 1, 0, true, g * 2.6);
+  add(circuloPath(0, 0, R_MAX - 66), 1, 0, true, g * 1.1);
+
+  // Coloca un motivo dentro de unos límites respetando su trazo y su evenodd.
+  const poner = (tipo, ra, rb, kk, anc, oo, forzarTrazo) => {
+    if (rb - ra < 4) return;
+    const m = MOTIVOS[tipo](ra, rb, (180 / kk) * anc, rnd);
+    const esTrazo = forzarTrazo || !!m.trazo;
+    add(m.d, kk, oo, esTrazo, esTrazo ? g * (forzarTrazo ? 0.55 : 1) : 0, !!m.evenodd);
+  };
+
+  // El núcleo del die vive dentro del anillo de I/O: se comprimen las bandas.
+  const f = (R_MAX - 78 - R_MIN) / (R_MAX - R_MIN);
+  let previa = '';
+  bandas(cfg, rnd, 0.06, 0.90).forEach(([b0, b1, ba]) => {
+    const r0 = R_MIN + (b0 - R_MIN) * f, r1 = R_MIN + (b1 - R_MIN) * f, h = ba * f;
+    zB = -(r0 + r1) / 2;
+
+    // Tres familias, y nunca dos bandas seguidas de la misma. El estilo se veía
+    // repetitivo porque todas las bandas salían del mismo saco de motivos: con
+    // ocho anillos, casi siempre tocaban dos o tres iguales.
+    // Una banda de cada cuatro se deja casi vacía: el aire es la mitad del
+    // look de las referencias. Llenando las ocho coronas, el resultado se
+    // vuelve una maraña donde no se distingue ninguna pieza.
+    // Menos bandas vacías cuanto más alto el Detalle: es lo que más se nota al
+    // mover el deslizador en este estilo.
+    const fam = rnd() < 0.34 - dens * 0.24 && previa !== 'aire'
+      ? 'aire'
+      : elegir(rnd, ['hud','rutado','bloques'].filter(x => x !== previa));
+    previa = fam;
+
+    // Las repeticiones salen de la proporción de la banda, no de un armónico
+    // suelto: con `repeticionesArmonicas` una banda ancha se quedaba con seis
+    // piezas y el anillo salía medio vacío. El HUD quiere tramos anchos (pocos)
+    // y el rutado también: una pista tiene que ser larga para leerse como
+    // pista — troceada en cuarenta copias diminutas es pelusa.
+    const mid = (r0 + r1) / 2;
+    const prop = fam === 'hud' ? 2.1 : fam === 'rutado' ? 1.7 : 0.95;
+    // Tope de repeticiones por familia. Sin tope, en una banda estrecha el
+    // reparto proporcional pide sesenta copias y la escala de marcas deja de
+    // leerse como escala: es un peine.
+    const k = Math.min(repeticionesParaBanda(N, mid, h, rnd, prop),
+                       fam === 'rutado' ? 20 : fam === 'hud' ? 24 : 30);
+    const hw = 180 / k;
+    const off = rnd() < 0.5 ? hw : 0;
+
+    if (fam === 'aire'){
+      if (rnd() < 0.6) poner('flechaTicks', r0 + h*0.30, r1 - h*0.30,
+                             elegir(rnd, [3, 4, 6]), 0.5, off);
+      add(circuloPath(0, 0, r1), 1, 0, true, g * (rnd() < 0.4 ? 1.8 : 0.7));
+      return;
+    }
+
+    if (fam === 'hud'){
+      // Instrumento: arcos partidos, bloques sobre el arco y escalas.
+      const tipo = h > 44 ? elegir(rnd, ['arcoBloques','arcoSegmentado','anilloDatos','arcoBloques'])
+                          : elegir(rnd, ['escalaRadial','anilloDatos','flechaTicks','escalaRadial']);
+      poner(tipo, r0, r1, k, 0.98, off);
+      if (h > 44 && rnd() < 0.35 + dens * 0.45)
+        poner('escalaRadial', r0 + h*0.68, r1, k, 0.90, off + hw);
+      if (rnd() < 0.10 + dens * 0.45)
+        poner('cunaHud', r0, r1, Math.max(3, Math.round(k / 2)), 0.90, off);
+      if (h > 30 && rnd() < dens * 0.55)
+        poner('flechaTicks', r0 + h*0.20, r1 - h*0.20, k, 0.40, off + hw);
+
+    } else if (fam === 'rutado'){
+      // Capa de metal: pistas con quiebre, buses a 45° y sus vías.
+      const tipo = h > 44 ? elegir(rnd, ['busDiagonal','trazaVia','busDiagonal','manhattan'])
+                          : elegir(rnd, ['manhattan','trazaVia','manhattan']);
+      poner(tipo, r0, r1, k, 0.98, off);
+      // Segunda pasada desfasada: en las referencias las pistas van en haz, no
+      // sueltas. Una sola pasada dejaba la banda casi vacía.
+      if (rnd() < 0.25 + dens * 0.6) poner(tipo, r0 + h*0.10, r1 - h*0.10, k, 0.72, off + hw*0.5);
+      if (tipo === 'manhattan') poner('viaCuadrada', r0 + h*0.30, r0 + h*0.54, k, 0.94, off);
+      if (rnd() < 0.55)
+        poner(elegir(rnd, ['viaRedonda','padTermina','viaCuadrada']),
+              r0 + h*0.18, r1 - h*0.18, k, 0.90, off + hw);
+      // Vías sueltas: las controla el deslizador de Detalle.
+      if (dens > 0.35 && h > 28)
+        poner('viaCuadrada', r0 + h*0.60, r0 + h*0.86, k, 0.90, off + hw);
+
+    } else {
+      // Bloques del die: macros, celdas, conectores y retículas de puntos.
+      const tipo = h > 44 ? elegir(rnd, ['chip','celdas','conector','matrizPuntos','arrayMem'])
+                          : elegir(rnd, ['celdas','matrizPuntos','pad','pines','conector']);
+      // El macro de memoria son siete líneas por sector: repetido treinta veces
+      // es una trama de doscientas líneas, no un macro.
+      const kk = tipo === 'arrayMem' ? Math.min(k, 12) : k;
+      poner(tipo, r0, r1, kk, 0.98, off);
+      if (tipo === 'chip') poner('pines', r0, r1, k, 0.94, off, true);
+      if (h > 44 && rnd() < 0.20 + dens * 0.6)
+        poner(elegir(rnd, ['viaRedonda','matrizPuntos','flechaTicks']),
+              r0 + h*0.24, r1 - h*0.24, k, 0.44, off + hw);
+      if (h > 26 && rnd() < dens * 0.5)
+        poner('viaRedonda', r0 + h*0.10, r0 + h*0.34, k, 0.36, off + hw);
+    }
+    // Aros: gruesos y finos alternados, como los buses de potencia.
+    if (rnd() < 0.62) add(circuloPath(0, 0, r1), 1, 0, true, g * (rnd() < 0.3 ? 2.4 : 0.9));
+  });
+
+  // --- Pistas largas que cruzan varias coronas y mueren en un pad ---
+  // En las referencias son lo que ata el conjunto: sin ellas cada anillo va a
+  // lo suyo y el dibujo se lee como coronas apiladas, no como una placa.
+  if (rnd() < 0.85){
+    const kL = elegir(rnd, [6, 8, 12, 16]), hwL = 180 / kL;
+    const ra = R_MIN * 3.4, rb = R_MAX - 74, s = rnd() < 0.5 ? 1 : -1;
+    zB = -(ra + rb) / 2;
+    add(`M ${P(-s*hwL*0.26, ra)} L ${P(-s*hwL*0.26, ra + (rb-ra)*0.36)} `
+      + `L ${P(s*hwL*0.12, ra + (rb-ra)*0.48)} L ${P(s*hwL*0.12, rb)}`,
+        kL, 0, true, g * 0.9);
+    add(circuloPath(...pt(s*hwL*0.12, rb), Math.max(g * 1.5, 5)), kL, 0, false, 0);
+  }
+
+  // --- Centro: en las referencias es un disco vacío rodeado de escalas ---
+  const Rc = R_MIN * 2.6;
+  zB = 0;
+  add(circuloPath(0, 0, Rc), 1, 0, true, g * 2);
+  add(MOTIVOS.escalaRadial(Rc * 0.60, Rc * 0.96, 180 / 12 * 0.9).d, 12, 0, false, 0);
+  add(circuloPath(0, 0, Rc * 0.50), 1, 0, true, g * 0.8);
+  add(circuloPath(0, 0, R_MIN * 0.5), 1, 0, false, 0);
+  return { semilla, N, partes };
+}
+
+/* --- Estilo naturaleza: dendritas de copo de nieve, hojas y venas --- */
+function generarNatura(semilla, cfg){
+  const rnd = mulberry32((semilla ^ 0x7E5A11C3) >>> 0);
+  const N = cfg.simetria, dens = cfg.densidad / 100;
+  const partes = [];
+  let zB = 0;   // profundidad de la banda en curso (ver cuerpoMandala)
+  const add = (d, k, off, trazo, grosor, tr, eo) =>
+    partes.push({ d, k: k || 1, off: off || 0, trazo: !!trazo, grosor: grosor || 0,
+                  tr: tr || '', evenodd: !!eo, z: zB });
+
+  const bs = bandas(cfg, rnd, 0.14, 1.06, 0.18);
+  const fase = rnd() < 0.5 ? 0 : 1;
+
+  // El centro es SIEMPRE una fractal, y ocupa las dos primeras bandas enteras
+  // para que se vea. Con un radio pequeño la idea de fractal no se lee.
+  //
+  // Aquí NO entran el copo de Koch ni el triángulo de Sierpinski aunque sean
+  // las fractales de manual: los dos se construyen sobre un triángulo
+  // equilátero y el triángulo no dice naturaleza — dice geometría. Las que
+  // quedan son las que la naturaleza usa de verdad: dendrita de hielo,
+  // filotaxis, empaquetado de burbujas y espiral logarítmica. Todas cerradas,
+  // porque una fractal en trazo suelto no se puede pintar.
+  const Rc = bs.length > 1 ? bs[1][1] : R_MIN * 4;
+  const centro = elegir(rnd, ['dendrita','filotaxis','burbujas','espiral','dendrita','filotaxis']);
+  if (centro === 'dendrita'){
+    add(copoDendrita(Rc, 3), 1, 0, false, 0);
+    add(circuloPath(0, 0, Rc * 0.16), 1, 0, false, 0);
+  } else if (centro === 'burbujas'){
+    add(circulosFractal(Rc, 3), 1, 0, false, 0, '', true);
+    add(circuloPath(0, 0, Rc), 1, 0, true, 2.2);
+  } else if (centro === 'espiral'){
+    // Corona de nautilos: la espiral logarítmica es más legible repetida en
+    // anillo que una sola grande en el centro.
+    add(MOTIVOS.nautilo(Rc*0.20, Rc*0.98, 36).d, 5, 0, false, 0, '', true);
+    add(circuloPath(0, 0, Rc*0.17), 1, 0, false, 0);
+    add(circuloPath(0, 0, Rc), 1, 0, true, 2.2);
+  } else {
+    add(filotaxis(R_MIN * 0.2, Rc, 60 + Math.round(dens * 120)), 1, 0, false, 0);
+    add(circuloPath(0, 0, Rc), 1, 0, true, 2.2);
+  }
+  // Una banda lleva un collar de fractales sueltas: es lo que hace que la
+  // autosimilitud se note a simple vista y no solo en el centro.
+  const bandaFractal = 2 + Math.floor(rnd() * Math.max(1, bs.length - 2));
+
+  bs.forEach(([r0, r1, alto], iB) => {
+    if (iB < 2) return;                       // reservadas para el centro
+    zB = -(r0 + r1) / 2;
+    if (iB === bandaFractal && alto > 34){
+      const mid = (r0 + r1) / 2;
+      const k = repeticionesParaBanda(N, mid, alto, rnd);
+      const off = rnd() < 0.5 ? 180 / k : 0;
+      // Collar de fractales: copos de hielo completos, o piezas que crecen por
+      // recursión (fronda, dendrita, nautilo). Todas rellenas.
+      if (rnd() < 0.5){
+        const cuerda = 2 * mid * Math.sin(180 / k * D2R);
+        const s = Math.min(alto, cuerda) / 108;
+        add(copoDendrita(50, 2), k, off, false, 0,
+            ` translate(0,${(-mid).toFixed(1)}) scale(${s.toFixed(3)})`);
+      } else {
+        const tipo = elegir(rnd, ['fronda','dendrita','nautilo','escamaPina']);
+        const m = MOTIVOS[tipo](r0, r1, 180 / k * 0.96, rnd);
+        add(m.d, k, off, false, 0, '', !!m.evenodd);
+      }
+      add(circuloPath(0, 0, r1), 1, 0, true, 2);
+      return;
+    }
+    const mid = (r0 + r1) / 2;
+    const k = repeticionesParaBanda(N, mid, alto, rnd), hw = 180 / k;
+    // Igual que en el estilo geométrico: una banda ancha con un motivo fino
+    // queda vacía, así que por encima de cierto alto solo entran los que llenan.
+    // Tres familias: tierra (flores y hojas), agua y viento. Cada mandala
+    // toma la suya para que el conjunto tenga un tema, no una ensalada.
+    const familia = ['tierra','agua','viento'][(iB + Math.floor(rnd()*3)) % 3];
+    // Casi todo relleno: en una lámina para colorear, un anillo de trazo suelto
+    // es un anillo que no se puede pintar. Los de línea quedan como acento.
+    const anchos = {
+      tierra: ['flor','flor','hoja','hojaLobulada','fronda','ramaHojas','escamaPina','hoja'],
+      agua:   ['ola','gotaAgua','ola','flor','cumulo','ondaBanda','cumulo'],
+      viento: ['remolinoAncho','rachaAncha','remolinoAncho','hoja','dendrita','rachaAncha']
+    };
+    const finos = {
+      tierra: ['semillero','punto','escamaPina','ramaHojas','escama','hoja','vena','nautilo'],
+      agua:   ['ondaBanda','cumulo','punto','gotaAgua','nautilo','onda'],
+      viento: ['rachaAncha','dendrita','remolinoAncho','semillero','punto','racha']
+    };
+    const tipo = alto > 44 ? elegir(rnd, anchos[familia]) : elegir(rnd, finos[familia]);
+    const off = ((iB + fase) % 2) ? hw : 0;
+
+    // Las capas anchas de hoja o pétalo van decoradas: contornos anidados,
+    // gota dentro y perlas siguiendo el borde. Es lo que separa una lámina de
+    // mandala de un anillo de manchas.
+    if ((tipo === 'hoja' || tipo === 'hojaLobulada') && alto > 52){
+      capaPetalos(add, r0, r1, k, off, 2.6, rnd,
+                  { forma: rnd() < 0.5 ? 'ojival' : 'hoja', feston: rnd() < 0.5 });
+    } else if (tipo === 'flor'){
+      // Las flores se colocan como pieza completa, no como sector.
+      const cuerda = 2 * mid * Math.sin(hw * D2R);
+      const s = Math.min(alto, cuerda) / 98;
+      const nP = elegir(rnd, [5, 6, 8, 12]);
+      const tr = ` translate(0,${(-mid).toFixed(1)}) scale(${s.toFixed(3)})`;
+      add(roseta(50, nP, 0.24), k, off, false, 0, tr);
+      add(roseta(26, nP, 0.30), k, off, true, 2.6, tr);
+    } else if (tipo === 'arbol'){
+      add(arbolFractal(r0, r1, alto > 90 ? 4 : 3), k, off, true, entre(rnd, 2.2, 3.6));
+    } else {
+      const m = MOTIVOS[tipo](r0, r1, hw * entre(rnd, 0.95, 1), rnd);
+      add(m.d, k, off, !!m.trazo, m.trazo ? entre(rnd, 3, 5.5) : 0);
+      // La vena va con el mismo desfase que la hoja o queda desalineada.
+      if ((tipo === 'hoja' || tipo === 'hojaLobulada') && alto > 50)
+        add(MOTIVOS.vena(r0 + alto*0.12, r1 - alto*0.12, hw*0.45).d, k, off, true, 2);
+    }
+    // Semillas entre las hojas: rellenan el hueco que dejan los motivos
+    // grandes y son lo que da textura al estilo.
+    if (alto > 40 && rnd() < 0.5 + dens * 0.4){
+      const [cx, cy] = pt(0, r0 + alto * 0.5);
+      add(circuloPath(cx, cy, Math.min(alto * 0.11, 7)), k, off ? 0 : hw, false, 0);
+    }
+    // Adornos que solo aparecen con el Detalle alto: sin esto el deslizador no
+    // cambiaba nada en este estilo (medido: 16 piezas a 0, 18 a 100).
+    if (alto > 34 && rnd() < dens * 0.7){
+      const m = MOTIVOS.semillero(r0 + alto*0.16, r1 - alto*0.16, hw * 0.5, rnd);
+      add(m.d, k, off + hw, false, 0);
+    }
+    if (alto > 46 && rnd() < dens * 0.6)
+      add(MOTIVOS.vena(r0 + alto*0.18, r1 - alto*0.14, hw*0.40).d, k, off, true, 1.8);
+    // Ningún aro en la última banda: así el contorno del mandala lo dibujan
+    // las puntas de los pétalos y queda lobulado, no un círculo perfecto.
+    if (iB < bs.length - 1 && rnd() < 0.4)
+      add(circuloPath(0, 0, r1), 1, 0, true, entre(rnd, 1.5, 3));
+  });
+  return { semilla, N, partes };
+}
+
+/* --- Estilo animales: siluetas curadas distribuidas por los anillos --- */
+function generarAnimales(semilla, cfg){
+  const rnd = mulberry32((semilla ^ 0x51ED270B) >>> 0);
+  const N = cfg.simetria, dens = cfg.densidad / 100;
+  const partes = [];
+  let zB = 0;   // profundidad de la banda en curso (ver cuerpoMandala)
+  const add = (d, k, off, trazo, grosor, tr) =>
+    partes.push({ d, k: k || 1, off: off || 0, trazo: !!trazo, grosor: grosor || 0, tr: tr || '', z: zB });
+  const nombres = Object.keys(SILUETAS);
+
+  add(circuloPath(0, 0, R_MIN * 0.8), 1, 0, false, 0);
+  let usadas = 0;
+
+  const faseA = rnd() < 0.5 ? 0 : 1;
+  bandas(cfg, rnd, 0.16, 1.05, 0.16).forEach(([r0, r1, alto], i) => {
+    const mid = (r0 + r1) / 2;
+    zB = -mid;
+    // Las siluetas necesitan sitio: por debajo de cierto alto no se leen.
+    if (alto > 44 && (usadas === 0 || rnd() < 0.8)){
+      usadas++;
+      // Muchas repeticiones = siluetas diminutas. Se limita a 12.
+      const k = repeticionesArmonicas(Math.max(4, Math.min(N, 12)), rnd);
+      const cuerda = 2 * mid * Math.sin(180 / k * D2R);
+      const s = Math.min(alto, cuerda) / 94;
+      const off = ((i + faseA) % 2) ? 180 / k : 0;
+      add(SILUETAS[elegir(rnd, nombres)], k, off, false, 0,
+          ` translate(0,${(-mid).toFixed(1)}) scale(${s.toFixed(3)})`);
+      // Puntos en el hueco entre siluetas: sin esto el anillo se ve vacío,
+      // porque las siluetas son pocas y no llenan la circunferencia.
+      const [px, py] = pt(0, mid);
+      add(circuloPath(px, py, Math.min(alto * 0.09, 6)), k, off + 180 / k, false, 0);
+      // Collar extra, controlado por el deslizador de Detalle.
+      if (dens > 0.35){
+        const [qx, qy] = pt(0, r0 + alto * 0.14);
+        add(circuloPath(qx, qy, Math.min(alto * 0.05, 4)), k * 2, 0, false, 0);
+      }
+    } else {
+      const k = repeticionesParaBanda(N, mid, alto, rnd), hw = 180 / k;
+      const tipo = elegir(rnd, ['punto','hoja','arco','escama','rombo','circulo']);
+      const m = MOTIVOS[tipo](r0, r1, hw * entre(rnd, 0.95, 1), rnd);
+      add(m.d, k, ((i + faseA) % 2) ? hw : 0, !!m.trazo, m.trazo ? entre(rnd, 2.5, 5) : 0);
+    }
+    if (rnd() < 0.6) add(circuloPath(0, 0, r1), 1, 0, true, entre(rnd, 2, 4.5));
+  });
+  return { semilla, N, partes };
+}
+
+/* --- Estilo robots: engranajes, tuercas, paneles y antenas --- */
+function generarRobot(semilla, cfg){
+  const rnd = mulberry32((semilla ^ 0x3D9A61B7) >>> 0);
+  const N = cfg.simetria, dens = cfg.densidad / 100;
+  const partes = [];
+  let zB = 0;   // profundidad de la banda en curso (ver cuerpoMandala)
+  const add = (d, k, off, trazo, grosor, eo) =>
+    partes.push({ d, k: k || 1, off: off || 0, trazo: !!trazo, grosor: grosor || 0, evenodd: !!eo, z: zB });
+  const g = 3 + dens * 3;
+
+  // Núcleo: el ojo del mecha. Monoojo tipo Zaku o visor con cresta en V.
+  const kOjo = Math.max(4, Math.min(12, N));
+  if (rnd() < 0.5){
+    add(MOTIVOS.monoojo(R_MIN * 0.5, R_MIN * 2.0, 180 / kOjo).d, kOjo, 0, false, 0);
+  } else {
+    add(MOTIVOS.visor(R_MIN * 0.5, R_MIN * 1.7, 180 / kOjo).d, kOjo, 0, false, 0);
+    add(MOTIVOS.vfin(R_MIN * 1.7, R_MIN * 2.4, 180 / kOjo).d, kOjo, 0, false, 0);
+  }
+  add(circuloPath(0, 0, R_MIN * 2.6), 1, 0, true, g * 1.6);
+
+  // Coloca un motivo dentro de unos límites, respetando su trazo y evenodd.
+  const poner = (tipo, ra, rb, kk, anc, oo, forzarTrazo) => {
+    if (rb - ra < 4) return;
+    const m = MOTIVOS[tipo](ra, rb, (180 / kk) * anc, rnd);
+    const esTrazo = forzarTrazo || !!m.trazo;
+    add(m.d, kk, oo, esTrazo, esTrazo ? g * (forzarTrazo ? 0.5 : 1) : 0, !!m.evenodd);
+  };
+
+  // Sombreado cel. La sombra es una CUÑA recortada con la propia pieza, no una
+  // copia desplazada: así queda siempre DENTRO de la figura, con el borde duro
+  // atravesándola, que es como sombrea el anime. Con una copia desplazada, en
+  // las piezas estrechas (un cañón, una antena) la sombra caía fuera y parecía
+  // sombra proyectada al lado del objeto.
+  const sombra = (tipo, ra, rb, kk, anc, oo) => {
+    if (rb - ra < 12) return;
+    const sector = (180 / kk) * anc;
+    const m = MOTIVOS[tipo](ra, rb, sector, rnd);
+    if (m.trazo) return;
+    const a = Math.max(ra - 30, 1), b = rb + 30;
+    const cuna = `M ${P(-sector*1.6, a)} L ${P(-sector*1.6, b)} `
+               + `L ${P(-sector*0.12, b)} L ${P(-sector*0.12, a)} Z`;
+    partes.push({ d: cuna, recorte: m.d, recorteEo: !!m.evenodd,
+                  k: kk, off: oo, trazo: false, grosor: 0, z: zB, sombra: true });
+  };
+
+  const faseR = rnd() < 0.5 ? 0 : 1;
+  bandas(cfg, rnd, 0.10, 1.05, 0.18).forEach(([r0, r1, alto], iB) => {
+    const mid = (r0 + r1) / 2;
+    zB = -mid;
+    const k = repeticionesParaBanda(N, mid, alto, rnd), hw = 180 / k;
+    const off = ((iB + faseR) % 2) ? hw : 0;
+    const h = r1 - r0;
+
+    // --- Banda ancha: CONJUNTO DE PLACA, no un motivo suelto ---
+    // Esto es lo que separa un mandala geométrico de una pieza de maquinaria:
+    // una placa base con sus detalles anidados dentro de sus propios límites
+    // (rótulo, tornillería, ranura), más una pieza pequeña intercalada entre
+    // placa y placa. Un solo motivo repetido nunca lee como máquina.
+    if (alto > 56){
+      const fam = rnd();
+
+      // Corona de artillería. Solo la familia del cañón: los tubos son
+      // alargados y si llenan el sector salen achatados, así que van
+      // estrechos y el hueco se rellena con una pieza intercalada.
+      if (fam < 0.16){
+        const arma = elegir(rnd, ['canon','canonDoble','railgun','multitubo','bocacha']);
+        poner(arma, r0, r1, k, 0.60, off);
+        sombra(arma, r0, r1, k, 0.60, off);
+        poner(elegir(rnd, ['acople','rotula','brida','cruzAviso','tuerca','diamante']),
+              r0 + h*0.26, r1 - h*0.26, k, 0.36, off + hw);
+        if (rnd() < dens * 0.7) poner('desgaste', r0, r1, k, 0.55, off, true);
+        if (rnd() < 0.45) add(circuloPath(0, 0, r1), 1, 0, true, g * 0.7);
+        return;
+      }
+
+      // Corona de cabezas: lo que identifica al mecha de un vistazo. El casco
+      // lleva su visor dentro y las antenas se intercalan entre casco y casco.
+      if (fam < 0.30){
+        const cara = elegir(rnd, ['cascoMecha','cascoMecha','ojoVisor']);
+        poner(cara, r0, r1, k, 0.92, off);
+        sombra(cara, r0, r1, k, 0.92, off);
+        if (cara === 'cascoMecha' && rnd() < 0.7)
+          poner('ojoVisor', r0 + h*0.22, r0 + h*0.60, k, 0.52, off);
+        poner(elegir(rnd, ['antenaDoble','antenaDoble','sensor','pines']),
+              r0 + h*0.10, r1 - h*0.14, k, 0.34, off + hw);
+        if (rnd() < dens * 0.6) poner('desgaste', r0, r1, k, 0.7, off, true);
+        if (rnd() < 0.5) add(circuloPath(0, 0, r1), 1, 0, true, g * 0.7);
+        return;
+      }
+
+      // Corona de uniones y transmisión: rótulas, bisagras y piñones. Es el
+      // rasgo que más se repite en las referencias — el mecha se lee por
+      // cómo están articuladas sus piezas, no solo por la chapa.
+      if (fam < 0.46){
+        const un = elegir(rnd, ['rotula','bisagra','acople','pinon']);
+        poner(un, r0, r1, k, 0.86, off);
+        sombra(un, r0, r1, k, 0.86, off);
+        poner(elegir(rnd, ['pinon','tuerca','remaches','brida','cruzAviso']),
+              r0 + h*0.24, r1 - h*0.24, k, 0.38, off + hw);
+        if (rnd() < dens * 0.6) poner('desgaste', r0, r1, k, 0.7, off, true);
+        if (rnd() < 0.5) add(circuloPath(0, 0, r1), 1, 0, true, g * 0.7);
+        return;
+      }
+
+      const base = elegir(rnd, ['blindaje','blindaje','chapaOndulada','viga','refuerzo',
+                                'capsula','escotilla','hombrera','ala','ojiva','thruster']);
+      poner(base, r0, r1, k, 0.99, off);
+      sombra(base, r0, r1, k, 0.99, off);                          // sombreado cel
+      poner(base, r0 + h*0.11, r1 - h*0.11, k, 0.76, off, true);   // línea de panel
+
+      // Detalle en el tercio exterior de la placa: la señalética.
+      poner(elegir(rnd, ['etiqueta','placaTexto','teclas','codigo','flechaDir','flechaDir',
+                         'peligro','barrasAviso','trianguloAviso','cruzAviso','diamante']),
+            r0 + h*0.56, r1 - h*0.13, k, 0.58, off);
+      // Detalle en el tercio interior: tornillería, unión o engranaje.
+      poner(elegir(rnd, ['brida','discoJunta','remaches','rejilla','sensor','diana',
+                         'tuerca','perilla','pinon','rotula','acople','bisagra']),
+            r0 + h*0.14, r0 + h*0.44, k, 0.52, off);
+      // Pieza pequeña ENTRE placas: rompe la uniformidad del anillo.
+      if (rnd() < 0.8)
+        poner(elegir(rnd, ['pinon','rotula','acople','bisagra','tuerca','brida',
+                           'punto','pines','cruzAviso','flechaDir','refuerzo']),
+              r0 + h*0.28, r1 - h*0.28, k, 0.40, off + hw);
+      // Desgaste: rayas de uso sobre el blindaje.
+      if (rnd() < dens) poner('desgaste', r0, r1, k, 0.9, off, true);
+      if (rnd() < dens * 0.5) poner('desgaste', r0 + h*0.3, r1, k, 0.6, off + hw*0.5, true);
+      if (rnd() < 0.45) add(circuloPath(0, 0, r1), 1, 0, true, g * 0.7);
+      return;
+    }
+
+    // --- Banda estrecha: rótulo de bahía, o una pieza suelta ---
+    if (alto > 34 && rnd() < 0.30){
+      const kN = Math.max(4, Math.min(k, 12));
+      const cuerda = 2 * mid * Math.sin(180 / kN * D2R);
+      const txt = codigoBahia(rnd);
+      const sN = Math.min(alto * 0.72, cuerda / Math.max(txt.length, 1) * 1.5) / 74;
+      add(textoPath(txt), kN, ((iB + faseR) % 2) ? 180 / kN : 0, false, 0,
+          ` translate(0,${(-mid).toFixed(1)}) scale(${sN.toFixed(3)})`);
+      if (rnd() < 0.6) add(circuloPath(0, 0, r1), 1, 0, true, g * 0.7);
+      return;
+    }
+
+    const tipo = elegir(rnd, ['etiqueta','placaTexto','diamante','trianguloAviso','cruzAviso',
+                              'barrasAviso','flechaDir','flechaDir','peligro','codigo','teclas',
+                              'brida','discoJunta','remaches','tuerca','pines','diana','sensor',
+                              'rotula','rotula','bisagra','acople','pinon','pinon','engranaje',
+                              'viga','refuerzo','chapaOndulada','corrugada','eslabon',
+                              'articulacion','piston','pistonVastago','cable','ranura',
+                              'rejilla','radiador','perilla','diente','antena','antenaDoble',
+                              'ojoVisor','capsula','multitubo','bocacha']);
+    const m = MOTIVOS[tipo](r0, r1, hw * (tipo === 'diente' ? 1 : entre(rnd, 0.94, 1)), rnd);
+    // El engranaje ya es una corona completa: repetirlo k veces solo apila
+    // copias idénticas encima de sí mismo.
+    const kM = tipo === 'engranaje' ? 1 : k;
+    add(m.d, kM, tipo === 'engranaje' ? 0 : off, !!m.trazo, m.trazo ? g : 0, !!m.evenodd);
+    if (tipo === 'diente') add(circuloPath(0, 0, r0 + alto * 0.05), 1, 0, true, g * 1.8);
+    if (rnd() < 0.5) add(circuloPath(0, 0, r1), 1, 0, true, g * 0.7);
+  });
+  return { semilla, N, partes };
+}
+
+/* --- Vocabularios y registro de estilos --- */
+const VOC = {
+  geo:      { motivos:['petalo','gota','rombo','triangulo','arco','circulo','punto','estrella','radial'],
+              ancho:[0.94, 1.00], grosor:[3, 8],  aros:0.45, hueco:1.06, solape:0.18 },
+  africano: { motivos:['romboAnidado','triRayado','greca','espiralAfr','ojoAfr','dientes','lente',
+                       'chevron','escalera','damero','abanico','zigzagMulti','ojo','triangulo','peine'],
+              ancho:[0.96, 1.00], grosor:[6, 12], aros:0.5, hueco:1.04, solape:0.22,
+              // Cenefas apiladas: cada anillo lleva su motivo MÁS una tira de
+              // textura, que es como se construyen los tejidos de referencia.
+              compuesto:['conteo','punto','zigzagMulti','damero','radial','greca'] }
+};
+
+const ESTILOS = {
+  geo:      { n:'Geométrico',     pal:'Clásico',  gen:(s,c) => generarAnillos(s, c, VOC.geo) },
+  hindu:    { n:'Hindú · Yantra', pal:'Flor',     gen:generarHindu },
+  africano: { n:'Africano',       pal:'Kente',    gen:(s,c) => generarAnillos(s, c, VOC.africano) },
+  circuito: { n:'Circuitos',      pal:'Circuito', gen:generarCircuito },
+  natura:   { n:'Naturaleza',     pal:'Escarcha', gen:generarNatura },
+  animal:   { n:'Animales',       pal:'Bosque',   gen:generarAnimales },
+  robot:    { n:'Robots · Mecha', pal:'Casco',    gen:generarRobot }
+};
+
+function generar(semilla, cfg){
+  const id = (ESTILOS[cfg.estilo] && limites().estilos.includes(cfg.estilo)) ? cfg.estilo : 'geo';
+  const m = ESTILOS[id].gen(semilla, cfg);
+  m.estilo = id;
+  return m;
+}
+
+/* =========================================================================
+   5. PALETAS
+   ========================================================================= */
+const PALETAS = [
+  { n:'Clásico',   c:['#16324F','#1E88A8','#F2A65A','#C0392B','#F4EDE4'] },
+  { n:'Yantra',    c:['#3B0A0A','#8C1C13','#C1440E','#E3A008','#F5E6C8'] },
+  { n:'Templo',    c:['#1F1206','#5B3A1A','#A8631B','#D9A441','#F3E3C3'] },
+  { n:'Atardecer', c:['#2B1B3D','#7B2D5E','#D64550','#F2913D','#FFD9A0'] },
+  { n:'Océano',    c:['#04263A','#0B6E7A','#2BA6A0','#7FD8C4','#E4F5F0'] },
+  { n:'Tierra',    c:['#3B2C20','#7A5230','#B08553','#D9B382','#EFE3D0'] },
+  { n:'Bosque',    c:['#14281D','#2F5D3A','#4F8A5B','#8FBF7F','#E3EFD3'] },
+  { n:'Neón',      c:['#0D0221','#7B2FF7','#F72585','#4CC9F0','#B9FBC0'] },
+  { n:'Rubí',      c:['#2A0A14','#6E1230','#A81F45','#D9536F','#F7C6CE'] },
+  { n:'Monocromo', c:['#111111','#444444','#777777','#AAAAAA','#EEEEEE'] },
+  { n:'Sabana',    c:['#1A1008','#7A2E12','#C1570F','#E0A72F','#F0E2C4'] },
+  { n:'Circuito',  c:['#06281E','#0E4A32','#1F7A4C','#C9A227','#DCE6DC'] },
+  { n:'Escarcha',  c:['#0B2545','#134074','#3B82A0','#8ECAE6','#EAF6FB'] },
+  { n:'Acero',     c:['#12161C','#2E3944','#5A6B7A','#9AA9B5','#D8E0E6'] },
+  { n:'Mecha',     c:['#1A1F2B','#1B4F9C','#C42A2A','#E8B923','#EDEFF2'] },
+  { n:'Eva',       c:['#141018','#3B1E58','#7B36B0','#8CC63F','#F0EAF5'] },
+  { n:'Marea',     c:['#062A3D','#0E5A73','#2E9BB5','#8FD4E0','#EAF7FA'] },
+  // Vivas y pasteles: los tonos tierra daban una primera impresión apagada.
+  { n:'Flor',      c:['#3D2645','#D81E5B','#F0544F','#F9C22E','#FDF0E9'] },
+  { n:'Joya',      c:['#160C28','#7B1FA2','#00838F','#E4007C','#F4E9FF'] },
+  { n:'Pastel',    c:['#6B7A8F','#F7A9A8','#F6D186','#A8D5BA','#FDF7F2'] },
+  { n:'Sorbete',   c:['#5E5A80','#FF9AA2','#B5EAD7','#C7CEEA','#FFF7F2'] },
+  // Mecánicas: gris metal y acento, no colores primarios.
+  { n:'Titanio',   c:['#0F1418','#28323C','#55636F','#8C9AA6','#DEE5EA'] },
+  { n:'Hangar',    c:['#12161B','#2C3742','#4A5A6A','#C9A227','#D9E0E6'] },
+  { n:'Reactor',   c:['#0A1018','#12303F','#1D6B84','#38D6C8','#DCEFEF'] },
+  // Casco: los grises azulados y el amarillo de aviso del panelado de hangar.
+  { n:'Casco',     c:['#0E1418','#243039','#46606D','#C9B227','#DDE6EA'] },
+  { n:'Alerta',    c:['#12171C','#2C3945','#5C7180','#D4342A','#E3E9EC'] },
+  // Africanas: mostaza, granate y verde del kente; ocres del adinkra.
+  { n:'Kente',     c:['#1A1008','#136F63','#C1121F','#E5B80B','#F2E8C9'] },
+  { n:'Adinkra',   c:['#141210','#4A3728','#9C6B30','#D9A441','#EDE0C8'] }
+];
+const iPaleta = nombre => Math.max(0, PALETAS.findIndex(p => p.n === nombre));
+
+/* =========================================================================
+   6. ESTADO E HISTORIAL
+   ========================================================================= */
+const estado = {
+  semilla: 0,
+  cfg: { estilo:'geo', simetria:12, anillos:6, densidad:55 },
+  paleta: 0,
+  colores: [],
+  fondo: 'blanco',
+  vista: 'plano',
+  lineas: false,
+  trazos: 'tinta',     // color de los contornos: tinta | varios | claro
+  acabado: 'plano'     // textura del color: plano | acuarela | lapiz
+};
+let mandala = null;
+let colorActivo = PALETAS[0].c[2];
+
+const historial = []; let hPtr = -1;
+
+function instantanea(){
+  return JSON.stringify({ s:estado.semilla, c:estado.cfg, p:estado.paleta, k:estado.colores,
+                          f:estado.fondo, v:estado.vista, l:estado.lineas, t:estado.trazos,
+                          a:estado.acabado });
+}
+function empujar(){
+  const snap = instantanea();
+  if (historial[hPtr] === snap) return;
+  historial.splice(hPtr + 1);
+  historial.push(snap);
+  if (historial.length > 40) historial.shift();
+  hPtr = historial.length - 1;
+  botonesHistorial();
+}
+function aplicarSnap(snap){
+  const o = JSON.parse(snap);
+  estado.semilla = o.s; estado.cfg = o.c; estado.paleta = o.p;
+  estado.colores = o.k; estado.fondo = o.f; estado.vista = o.v; estado.lineas = o.l;
+  estado.trazos = o.t || 'tinta';
+  estado.acabado = o.a || 'plano';
+  mandala = generar(estado.semilla, estado.cfg);
+  sincronizarControles();
+  pintar(false);
+  botonesHistorial();
+}
+function deshacer(){ if (hPtr > 0){ hPtr--; aplicarSnap(historial[hPtr]); } }
+function rehacer(){ if (hPtr < historial.length - 1){ hPtr++; aplicarSnap(historial[hPtr]); } }
+function botonesHistorial(){
+  bDeshacer.disabled = hPtr <= 0;
+  bRehacer.disabled  = hPtr >= historial.length - 1;
+}
+
+/* =========================================================================
+   7. FONDOS Y COLOR
+   ========================================================================= */
+const FONDOS = [
+  { id:'blanco',      n:'Blanco',  css:'#ffffff',  color:'#ffffff' },
+  { id:'negro',       n:'Negro',   css:'#141414',  color:'#141414' },
+  { id:'transparente',n:'Sin',     css:'repeating-conic-gradient(#c9ced8 0% 25%, #eef1f5 0% 50%) 50%/14px 14px', color:null },
+  { id:'oro',         n:'Oro',     css:'linear-gradient(135deg,#B8860B,#F7E7A1 35%,#D4AF37 55%,#9C7A1E 80%,#F0D98A)', color:'url(#oro)' },
+  { id:'paleta',      n:'Paleta',  css:null,       color:null }
+];
+// userSpaceOnUse y no objectBoundingBox: así el degradado es continuo por todo
+// el lienzo. Si cada figura tuviera el suyo, al rellenarlas en modo línea se
+// verían las costuras de un degradado por pieza.
+/* Acabados del color. Son filtros SVG aplicados a TODO el mandala de una vez,
+   no pieza a pieza: con 70 piezas, un filtro por pieza sería inasumible.
+   - acuarela: el borde se ondula (feTurbulence + feDisplacementMap), se
+     difumina un poco y se le añade grano de papel.
+   - lápiz: desplazamiento pequeño (el trazo tiembla) más una trama rayada muy
+     fina en una sola dirección, que es lo que imita el veteado del lápiz.   */
+const FILTROS = {
+  // Lo que hace reconocible una acuarela no es el desenfoque, es el PIGMENTO
+  // ACUMULADO EN EL BORDE. Se consigue erosionando la forma, restándosela a sí
+  // misma para quedarse con una franja de borde y multiplicando esa franja
+  // encima. Más el moteado de densidad del interior y el borde irregular.
+  // Una acuarela se reconoce por cuatro cosas, y hacen falta LAS CUATRO:
+  //  1. la mancha no respeta el contorno (borde irregular);
+  //  2. granulación: motas CLARAS y oscuras, no solo oscuras;
+  //  3. el pigmento se acumula en el borde al secarse;
+  //  4. la pintura es TRANSLÚCIDA y deja ver el papel.
+  // La versión anterior solo tenía 1 y 3 flojas: parecía color plano ondulado.
+  acuarela:
+    `<filter id="fAcuarela" x="-18%" y="-18%" width="136%" height="136%"
+             color-interpolation-filters="sRGB">
+       <feTurbulence type="fractalNoise" baseFrequency="0.026" numOctaves="4" seed="9" result="n1"/>
+       <feDisplacementMap in="SourceGraphic" in2="n1" scale="6"
+                          xChannelSelector="R" yChannelSelector="G" result="forma"/>
+
+       <feTurbulence type="fractalNoise" baseFrequency="0.11" numOctaves="4" seed="17" result="nc"/>
+       <feColorMatrix in="nc" type="matrix"
+          values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 -1.6 0.95" result="claro"/>
+       <feComposite in="claro" in2="forma" operator="in" result="claroRec"/>
+       <feBlend in="forma" in2="claroRec" mode="screen" result="p1"/>
+
+       <feTurbulence type="fractalNoise" baseFrequency="0.075" numOctaves="5" seed="3" result="no"/>
+       <feColorMatrix in="no" type="matrix"
+          values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.30 0" result="oscuro"/>
+       <feComposite in="oscuro" in2="forma" operator="in" result="oscuroRec"/>
+       <feBlend in="p1" in2="oscuroRec" mode="multiply" result="p2"/>
+
+       <feMorphology in="forma" operator="erode" radius="3.5" result="dentro"/>
+       <feComposite in="forma" in2="dentro" operator="out" result="franja"/>
+       <feGaussianBlur in="franja" stdDeviation="2" result="franjaBorrosa"/>
+       <feColorMatrix in="franjaBorrosa" type="matrix"
+          values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.85 0" result="franjaSuave"/>
+       <feComposite in="franjaSuave" in2="forma" operator="in" result="borde"/>
+       <feBlend in="p2" in2="borde" mode="multiply" result="p3"/>
+
+       <feGaussianBlur in="p3" stdDeviation="0.7" result="p4"/>
+       <feComponentTransfer in="p4">
+         <feFuncA type="linear" slope="0.80"/>
+       </feComponentTransfer>
+     </filter>`,
+  // El lápiz es GRANO, no rayas. La versión anterior usaba una frecuencia muy
+  // distinta en X y en Y, y eso produce franjas horizontales largas. Aquí la
+  // frecuencia es alta en los dos ejes: se lee como el diente del papel.
+  lapiz:
+    `<filter id="fLapiz" x="-8%" y="-8%" width="116%" height="116%"
+             color-interpolation-filters="sRGB">
+       <feTurbulence type="fractalNoise" baseFrequency="0.09" numOctaves="3" seed="7" result="n"/>
+       <feDisplacementMap in="SourceGraphic" in2="n" scale="3.2"
+                          xChannelSelector="R" yChannelSelector="G" result="d"/>
+       <feTurbulence type="fractalNoise" baseFrequency="0.42 0.55" numOctaves="5" seed="21" result="g"/>
+       <feColorMatrix in="g" type="matrix"
+          values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 -1.3 0.72" result="ga"/>
+       <feComposite in="ga" in2="d" operator="in" result="grano"/>
+       <feBlend in="d" in2="grano" mode="screen" result="conGrano"/>
+       <feTurbulence type="fractalNoise" baseFrequency="0.30 0.38" numOctaves="4" seed="41" result="g2"/>
+       <feColorMatrix in="g2" type="matrix"
+          values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.22 0" result="g2a"/>
+       <feComposite in="g2a" in2="d" operator="in" result="grano2"/>
+       <feBlend in="conGrano" in2="grano2" mode="multiply"/>
+     </filter>`
+};
+
+const GRADIENTE_ORO =
+  `<linearGradient id="oro" x1="-500" y1="-500" x2="500" y2="500" gradientUnits="userSpaceOnUse">
+     <stop offset="0" stop-color="#B8860B"/><stop offset=".35" stop-color="#F7E7A1"/>
+     <stop offset=".55" stop-color="#D4AF37"/><stop offset=".8" stop-color="#9C7A1E"/>
+     <stop offset="1" stop-color="#F0D98A"/>
+   </linearGradient>`;
+
+// Color sólido del fondo/material. null = transparente.
+function colorFondo(){
+  if (estado.fondo === 'paleta') return PALETAS[estado.paleta].c[4];
+  const f = FONDOS.find(x => x.id === estado.fondo);
+  return f ? f.color : '#ffffff';
+}
+// Color sólido y opaco equivalente al fondo, para tapar en modo línea. El
+// degradado de oro no sirve dentro de un grupo escalado (la maqueta): se
+// resolvería en otra escala y se verían las costuras.
+function opaco(c){
+  if (!c) return '#ffffff';
+  return c.startsWith('url') ? '#D4AF37' : c;
+}
+// Tinta que contrasta con el fondo elegido, para el modo "solo líneas".
+function tinta(){
+  const c = colorFondo();
+  if (!c || c.startsWith('url')) return '#111111';
+  const h = c.replace('#','');
+  const r = parseInt(h.slice(0,2),16), g = parseInt(h.slice(2,4),16), b = parseInt(h.slice(4,6),16);
+  return (0.2126*r + 0.7152*g + 0.0722*b) > 140 ? '#111111' : '#ffffff';
+}
+function autoColorear(){
+  const pal = PALETAS[estado.paleta].c;
+  const n = pal.length - 2;
+  estado.colores = mandala.partes.map((p, i) => {
+    // Las sombras cel van al tono más oscuro: borde duro y plano, como en el
+    // anime. Que coincida con el color del contorno es justo lo que se busca.
+    if (p.sombra) return pal[0];
+    if (!p.trazo) return pal[1 + (i % n)];
+    // Los contornos ya no van todos al color más oscuro: el usuario elige.
+    if (estado.trazos === 'varios') return pal[1 + ((i + 2) % n)];
+    if (estado.trazos === 'claro')  return pal[n];   // el acento de la paleta
+    return pal[0];
+  });
+}
+
+/* =========================================================================
+   8. RENDER
+   svgMarkup() es una función pura: mismo estado, mismo SVG. La usan por
+   igual la pantalla y la exportación.
+   ========================================================================= */
+
+// Maquetas dibujadas con paths — ningún recurso externo.
+const VISTAS = {
+  plano: null,
+  camiseta: {
+    cx:0, cy:86, s:0.42,
+    obj:(c, borde) => `
+      <ellipse cx="0" cy="350" rx="212" ry="22" fill="#00000014"/>
+      <path d="M -78,-252 C -122,-251 -172,-244 -216,-233 C -246,-226 -268,-214 -292,-198
+               L -344,-160 C -350,-155 -351,-148 -347,-141 L -300,-58
+               C -295,-49 -284,-47 -276,-53 L -232,-86 L -232,300
+               C -232,320 -224,330 -204,332 L 204,332 C 224,330 232,320 232,300
+               L 232,-86 L 276,-53 C 284,-47 295,-49 300,-58 L 347,-141
+               C 351,-148 350,-155 344,-160 L 292,-198 C 268,-214 246,-226 216,-233
+               C 172,-244 122,-251 78,-252 C 62,-196 -62,-196 -78,-252 Z"
+            fill="${c}" stroke="${borde}" stroke-width="2.5" stroke-linejoin="round"/>
+      <path d="M -232,-86 L -232,300 C -232,320 -224,330 -204,332 L -148,332
+               C -186,248 -190,58 -178,-70 Z" fill="#00000012"/>
+      <path d="M 232,-86 L 232,300 C 232,320 224,330 204,332 L 148,332
+               C 186,248 190,58 178,-70 Z" fill="#00000012"/>
+      <path d="M 0,-186 C 13,-58 10,140 0,294" fill="none" stroke="#0000000d" stroke-width="11"/>
+      <path d="M -78,-252 C -62,-196 62,-196 78,-252" fill="none" stroke="${borde}" stroke-width="10" stroke-linecap="round"/>
+      <path d="M -65,-245 C -51,-205 51,-205 65,-245" fill="none" stroke="#0000001c" stroke-width="3"/>
+      <path d="M -232,-86 C -244,-122 -251,-160 -249,-196" fill="none" stroke="#0000001c" stroke-width="3"/>
+      <path d="M 232,-86 C 244,-122 251,-160 249,-196" fill="none" stroke="#0000001c" stroke-width="3"/>
+      <path d="M -302,-64 L -274,-47 M 302,-64 L 274,-47" fill="none" stroke="#00000022" stroke-width="8"/>
+      <path d="M -226,294 L 226,294" fill="none" stroke="#0000001c" stroke-width="3"/>`
+  },
+  bolsa: {
+    cx:0, cy:124, s:0.47,
+    obj:(c, borde) => `
+      <ellipse cx="0" cy="374" rx="232" ry="20" fill="#00000014"/>
+      <path d="M -148,-108 C -148,-330 148,-330 148,-108" fill="none" stroke="${c}" stroke-width="19" stroke-linecap="round"/>
+      <path d="M -148,-108 C -148,-330 148,-330 148,-108" fill="none" stroke="${borde}" stroke-width="2" stroke-linecap="round"/>
+      <path d="M -106,-108 C -106,-284 106,-284 106,-108" fill="none" stroke="${c}" stroke-width="19" stroke-linecap="round"/>
+      <path d="M -106,-108 C -106,-284 106,-284 106,-108" fill="none" stroke="${borde}" stroke-width="2" stroke-linecap="round"/>
+      <path d="M -252,-118 L 252,-118 L 240,342 C 239,355 231,362 218,362
+               L -218,362 C -231,362 -239,355 -240,342 Z"
+            fill="${c}" stroke="${borde}" stroke-width="2.5" stroke-linejoin="round"/>
+      <path d="M -252,-118 L -240,342 C -239,355 -231,362 -218,362 L -180,362
+               C -196,198 -200,20 -204,-118 Z" fill="#00000010"/>
+      <path d="M 252,-118 L 240,342 C 239,355 231,362 218,362 L 180,362
+               C 196,198 200,20 204,-118 Z" fill="#00000010"/>
+      <path d="M -252,-84 L 252,-84" fill="none" stroke="#0000001e" stroke-width="3"/>
+      <rect x="-160" y="-118" width="24" height="44" rx="4" fill="#0000001c"/>
+      <rect x="-118" y="-118" width="24" height="44" rx="4" fill="#0000001c"/>
+      <rect x="94"   y="-118" width="24" height="44" rx="4" fill="#0000001c"/>
+      <rect x="136"  y="-118" width="24" height="44" rx="4" fill="#0000001c"/>
+      <path d="M -230,-68 L 230,-68 M -224,342 L 224,342" fill="none"
+            stroke="#00000024" stroke-width="2.5" stroke-dasharray="9 8"/>`
+  },
+  pared: {
+    cx:0, cy:-56, s:0.56,
+    obj:(c, borde) => `
+      <rect x="-500" y="-500" width="1000" height="1000" fill="${c}"/>
+      <rect x="-500" y="286" width="1000" height="214" fill="#00000018"/>
+      <path d="M -500,286 L 500,286" fill="none" stroke="${borde}" stroke-width="4"/>
+      <rect x="70" y="196" width="330" height="22" rx="11" fill="#00000026"/>
+      <rect x="96" y="218" width="16" height="68" fill="#00000026"/>
+      <rect x="358" y="218" width="16" height="68" fill="#00000026"/>
+      <path d="M -374,286 L -356,214 L -286,214 L -268,286 Z" fill="#00000026"/>
+      <path d="M -322,214 C -322,150 -370,120 -394,102 C -352,110 -318,142 -320,192 Z" fill="#00000022"/>
+      <path d="M -320,214 C -320,138 -278,106 -250,90 C -288,106 -316,146 -316,196 Z" fill="#0000001e"/>
+      <path d="M -321,214 L -321,148" fill="none" stroke="#00000026" stroke-width="5"/>`
+  },
+  // La taza lleva el mandala centrado en su BASE y recortado por la silueta del
+  // cuerpo: el dibujo se abre hacia arriba y cubre toda la pieza, en vez de ser
+  // un medallón pegado al frente. `s` = 1.08 basta para que el radio alcance
+  // las esquinas superiores desde el centro de la base.
+  taza: {
+    cx:-15, cy:243, s:1.08,
+    clip:`M -244,-186 L 214,-186 L 200,212 C 199,231 186,243 168,245
+          L -198,245 C -216,243 -229,231 -230,212 Z`,
+    obj:(c, borde) => `
+      <ellipse cx="-10" cy="266" rx="205" ry="22" fill="#00000014"/>
+      <path d="M 206,-92 C 344,-92 344,94 206,94" fill="none" stroke="${c}" stroke-width="44" stroke-linecap="round"/>
+      <path d="M 206,-92 C 344,-92 344,94 206,94" fill="none" stroke="${borde}" stroke-width="2.5"/>
+      <path d="M 208,-54 C 302,-54 302,56 208,56" fill="none" stroke="#00000018" stroke-width="3"/>
+      <path d="M -244,-186 L 214,-186 L 200,212 C 199,231 186,243 168,245
+               L -198,245 C -216,243 -229,231 -230,212 Z"
+            fill="${c}" stroke="${borde}" stroke-width="2.5" stroke-linejoin="round"/>`,
+    // Brillos, boca y base van DESPUÉS del mandala: son la cerámica, no el
+    // estampado, así que tienen que verse por encima de él.
+    encima:(c, borde) => `
+      <path d="M -196,-150 C -207,-40 -205,92 -190,220" fill="none" stroke="#ffffff33" stroke-width="26" stroke-linecap="round"/>
+      <path d="M 170,-150 C 180,-40 178,92 163,220" fill="none" stroke="#00000016" stroke-width="36" stroke-linecap="round"/>
+      <path d="M -244,-186 L 214,-186 L 200,212 C 199,231 186,243 168,245
+               L -198,245 C -216,243 -229,231 -230,212 Z"
+            fill="none" stroke="${borde}" stroke-width="2.5" stroke-linejoin="round"/>
+      <ellipse cx="-15" cy="-186" rx="229" ry="36" fill="${c}" stroke="${borde}" stroke-width="2.5"/>
+      <ellipse cx="-15" cy="-183" rx="201" ry="28" fill="#00000020"/>
+      <ellipse cx="-15" cy="-178" rx="183" ry="22" fill="#00000012"/>
+      <path d="M -215,224 L 186,224" fill="none" stroke="#0000001c" stroke-width="3"/>`
+  }
+};
+
+// `capa` filtra qué se dibuja: 'relleno' (solo las figuras macizas), 'trazo'
+// (solo los contornos) o nada (todo junto). Se separa para poder texturizar el
+// relleno sin tocar las líneas: en una acuarela o un lápiz de color reales, la
+// tinta del dibujo queda nítida y solo el color está pintado. Aplicar el
+// filtro a todo hacía que las líneas ondularan y parecía un reflejo en el agua.
+let CLIP_SEQ = 0;   // ids únicos para los recortes de las sombras
+
+function cuerpoMandala(lineas, paraExport, papel, capa){
+  const tin = tinta();
+  let s = '';
+  // Orden de dibujado por radio: primero lo más lejano al centro, al final lo
+  // más cercano. Así, donde dos anillos se entrelazan, las figuras interiores
+  // quedan POR ENCIMA de las exteriores — que es como se ve una flor abierta
+  // desde arriba. El índice original se conserva en data-i, porque es el
+  // número de capa de color. El sort es estable: dentro de un mismo anillo se
+  // respeta el orden en que el generador creó las piezas.
+  const orden = mandala.partes
+    .map((p, i) => i)
+    .sort((a, b) => (mandala.partes[a].z || 0) - (mandala.partes[b].z || 0));
+
+  orden.forEach(i => {
+    const p = mandala.partes[i];
+    // Las sombras no van en la lámina para colorear: ahí solo interesa el
+    // dibujo limpio.
+    if (p.sombra && lineas) return;
+    // En modo línea todo es contorno, así que no se separa.
+    if (capa && !lineas){
+      if (capa === 'relleno' && p.trazo) return;
+      if (capa === 'trazo' && !p.trazo) return;
+    }
+    const col = estado.colores[i] || '#333';
+    // En modo línea las figuras se rellenan con el color del papel, opaco.
+    // Así TAPAN lo que tienen debajo y no se ven las líneas de un anillo
+    // cruzando las del anillo de al lado: queda una lámina limpia, con las
+    // figuras interiores enteras sobre las exteriores. De paso el interior
+    // sigue siendo sensible al toque (con `none` no lo sería).
+    const relleno = lineas ? (p.trazo ? 'none' : (papel || 'transparent'))
+                           : (p.trazo ? 'none' : col);
+    const trz     = lineas ? tin   : (p.trazo ? col : 'none');
+    // En modo línea, las figuras macizas se pintan con `paint-order="stroke
+    // fill"`: primero el trazo y encima el relleno. Así el relleno tapa los
+    // trazos que caen DENTRO de la figura y solo queda visible su contorno
+    // exterior. Sin esto, una silueta de varios subtrazados (el cuerpo de un
+    // animal más sus patas y alas) mostraba las líneas internas cruzándola,
+    // como si las piezas estuvieran separadas en vez de fundidas.
+    // El grosor se dobla porque la mitad interior del trazo queda tapada.
+    const unir    = lineas && !p.trazo;
+    const gr      = lineas ? (unir ? 5.2 : 2.6) : (p.trazo ? p.grosor : 0);
+
+    // Las piezas con `recorte` (las sombras cel) se recortan con la silueta de
+    // la figura a la que sombrean. El recorte y la rotación van en el MISMO
+    // grupo, con el `clip-path` en el path interior sin transform propio: así
+    // el recorte gira con la pieza sin depender de en qué espacio lo resuelva
+    // el navegador.
+    let clipId = '';
+    if (p.recorte && !lineas) clipId = 'rc' + (++CLIP_SEQ);
+
+    s += `<g class="parte" data-i="${i}" fill="${relleno}" stroke="${trz}" stroke-width="${gr.toFixed(1)}" `
+       + (p.evenodd ? `fill-rule="evenodd" ` : '')
+       + (unir ? `paint-order="stroke fill" ` : '')
+       // La sombra se atenúa con opacidad, no eligiendo un tono más claro: así
+       // oscurece lo que tiene debajo sea cual sea el color de la pieza, y
+       // funciona igual con cualquier paleta.
+       + (p.sombra ? `opacity="0.28" ` : '')
+       + `stroke-linecap="round" stroke-linejoin="round">`;
+    if (clipId)
+      s += `<defs><clipPath id="${clipId}"><path d="${p.recorte}"`
+         + (p.recorteEo ? ` clip-rule="evenodd"` : '') + `/></clipPath></defs>`;
+
+    for (let j = 0; j < p.k; j++){
+      const rot = p.k > 1 ? `rotate(${(j * 360 / p.k + p.off).toFixed(2)})`
+                          : (p.off ? `rotate(${p.off})` : '');
+      const t = (rot || p.tr) ? ` transform="${rot}${p.tr || ''}"` : '';
+      if (clipId){
+        s += `<g${t}><path d="${p.d}" clip-path="url(#${clipId})"/></g>`;
+        continue;
+      }
+      s += `<path d="${p.d}"${t}/>`;
+      // Zona de toque ampliada para los motivos que son solo línea
+      if (p.trazo && !paraExport)
+        s += `<path d="${p.d}"${t} fill="none" stroke="transparent" stroke-width="34" pointer-events="stroke"/>`;
+    }
+    s += `</g>`;
+  });
+  return s;
+}
+
+/* Emite el mandala. Sin acabado va de una pasada. Con acabado va en dos: los
+   rellenos texturizados dentro del filtro y los contornos limpios encima. */
+function pintado(lineas, paraExport, papel, filtro, tr){
+  if (!filtro || lineas)
+    return `<g${tr}${filtro}>` + cuerpoMandala(lineas, paraExport, papel) + `</g>`;
+  return `<g${tr}${filtro}>` + cuerpoMandala(lineas, paraExport, papel, 'relleno') + `</g>`
+       + `<g${tr}>`          + cuerpoMandala(lineas, paraExport, papel, 'trazo')   + `</g>`;
+}
+
+function svgMarkup(op){
+  op = op || {};
+  const lineas = op.lineas ?? estado.lineas;
+  const vista  = op.vista  ?? estado.vista;
+  const px     = op.px;
+  const tam    = px ? ` width="${px}" height="${px}"` : '';
+  const V      = VISTAS[vista];
+  let fondo    = op.forzarFondo || colorFondo();
+
+  const acabado = op.acabado ?? estado.acabado;
+  const filtro = FILTROS[acabado] ? ` filter="url(#f${acabado[0].toUpperCase()}${acabado.slice(1)})"` : '';
+
+  let s = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${-VB/2} ${-VB/2} ${VB} ${VB}"${tam}>`;
+  const recorte = V && V.clip ? `<clipPath id="cVista"><path d="${V.clip}"/></clipPath>` : '';
+  const defs = (fondo === 'url(#oro)' ? GRADIENTE_ORO : '') + (FILTROS[acabado] || '') + recorte;
+  if (defs) s += `<defs>${defs}</defs>`;
+
+  if (!V){
+    if (fondo) s += `<rect x="${-VB/2}" y="${-VB/2}" width="${VB}" height="${VB}" fill="${fondo}"/>`;
+    // Con fondo transparente no hay nada detrás que copiar: se tapa con blanco,
+    // porque el objetivo del modo línea es ver el dibujo limpio para colorearlo.
+    s += pintado(lineas, !!px, lineas ? opaco(fondo) : null, filtro, '');
+  } else {
+    // En maqueta, el "fondo" es el color del objeto. Transparente no aplica
+    // a una camiseta: se cae a un gris neutro.
+    const material = fondo || '#DCDCDC';
+    s += V.obj(material, '#00000026');
+    // El recorte va en un grupo EXTERIOR al del transform, para que sus
+    // coordenadas sean las del objeto y no las del mandala escalado.
+    const abre = V.clip ? `<g clip-path="url(#cVista)">` : '';
+    s += abre
+       + pintado(lineas, !!px, lineas ? opaco(material) : null, filtro,
+                 ` transform="translate(${V.cx},${V.cy}) scale(${V.s})"`)
+       + (V.clip ? `</g>` : '');
+    if (V.encima) s += V.encima(material, '#00000026');
+  }
+
+  if (op.marcaAgua) s += `<text x="0" y="${VB/2 - 24}" text-anchor="middle" font-family="sans-serif" `
+                       + `font-size="26" fill="#00000055">Mandalas</text>`;
+  return s + `</svg>`;
+}
+
+function pintar(conFade){
+  svgHost.innerHTML = svgMarkup();
+  svgHost.classList.toggle('damero', estado.fondo === 'transparente' && estado.vista === 'plano');
+  if (conFade !== false){
+    svgHost.classList.remove('fade'); void svgHost.offsetWidth; svgHost.classList.add('fade');
+  }
+  dibujarCapas();
+  iSemilla.value = estado.semilla;
+  history.replaceState(null, '', '?seed=' + estado.semilla);
+}
+
+/* =========================================================================
+   9. UI
+   ========================================================================= */
+const $ = id => document.getElementById(id);
+const svgHost = $('svgHost'), lienzo = $('lienzo'), iSemilla = $('iSemilla');
+const bDeshacer = $('bDeshacer'), bRehacer = $('bRehacer');
+
+document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('#tabs button').forEach(x => x.classList.toggle('on', x === b));
+  document.querySelectorAll('.hoja').forEach(h => h.classList.toggle('on', h.id === 'hoja-' + b.dataset.hoja));
+});
+
+function marcar(cont, attr, valor){
+  document.querySelectorAll(cont + ' button').forEach(b =>
+    b.classList.toggle('on', b.dataset[attr] === String(valor)));
+}
+
+function sincronizarControles(){
+  sSimetria.value = estado.cfg.simetria; oSimetria.value = estado.cfg.simetria;
+  sAnillos.value  = estado.cfg.anillos;  oAnillos.value  = estado.cfg.anillos;
+  sDensidad.value = estado.cfg.densidad; oDensidad.value = estado.cfg.densidad;
+  iSemilla.value  = estado.semilla;
+  marcar('#estilos', 'estilo', estado.cfg.estilo);
+  marcar('#vistas', 'vista', estado.vista);
+  marcar('#trazos', 'trazos', estado.trazos);
+  marcar('#acabados', 'acabado', estado.acabado);
+  marcar('#modoLineas', 'lineas', estado.lineas ? '1' : '0');
+  $('bLineas').classList.toggle('on', estado.lineas);
+  document.querySelectorAll('.paleta').forEach((p, i) => p.classList.toggle('on', i === estado.paleta));
+  document.querySelectorAll('.muestraFondo').forEach(m => m.classList.toggle('on', m.dataset.fondo === estado.fondo));
+  dibujarSwatches();
+}
+
+function regenerar(nuevaSemilla){
+  if (nuevaSemilla !== undefined) estado.semilla = nuevaSemilla;
+  mandala = generar(estado.semilla, estado.cfg);
+  autoColorear();
+  pintar(nuevaSemilla !== undefined);
+}
+
+[['sSimetria','oSimetria','simetria'],['sAnillos','oAnillos','anillos'],['sDensidad','oDensidad','densidad']]
+.forEach(([sl, ou, key]) => {
+  const s = $(sl);
+  s.addEventListener('input', () => { $(ou).value = s.value; estado.cfg[key] = +s.value; regenerar(); });
+  s.addEventListener('change', empujar);
+});
+
+Object.keys(ESTILOS).forEach(id => {
+  const b = document.createElement('button');
+  b.dataset.estilo = id;
+  b.textContent = ESTILOS[id].n + (limites().estilos.includes(id) ? '' : ' 🔒');
+  b.onclick = () => {
+    if (!limites().estilos.includes(id)){ avisar('Estilo Pro'); return; }
+    estado.cfg.estilo = id;
+    estado.paleta = iPaleta(ESTILOS[id].pal);   // cada estilo trae su paleta
+    regenerar(); sincronizarControles(); empujar();
+  };
+  $('estilos').appendChild(b);
+});
+
+$('bGenerar').onclick = () => { regenerar(Math.floor(Math.random() * 1e9)); empujar(); };
+
+iSemilla.addEventListener('change', () => {
+  const v = parseInt(String(iSemilla.value).replace(/\D/g, ''), 10);
+  if (!isNaN(v)){ regenerar(v); empujar(); }
+});
+
+$('bCopiar').onclick = async () => {
+  try { await navigator.clipboard.writeText(location.href); avisar('Enlace copiado'); }
+  catch { avisar('Semilla: ' + estado.semilla); }
+};
+
+$('bAuto').onclick = () => { autoColorear(); pintar(false); empujar(); };
+
+document.querySelectorAll('#trazos button').forEach(b => b.onclick = () => {
+  estado.trazos = b.dataset.trazos;
+  marcar('#trazos', 'trazos', estado.trazos);
+  autoColorear(); pintar(false); empujar();
+});
+
+document.querySelectorAll('#acabados button').forEach(b => b.onclick = () => {
+  estado.acabado = b.dataset.acabado;
+  marcar('#acabados', 'acabado', estado.acabado);
+  pintar(false); empujar();
+});
+
+// --- paletas ---
+PALETAS.forEach((p, i) => {
+  const el = document.createElement('div');
+  el.className = 'paleta' + (i >= limites().paletas ? ' bloq' : '');
+  el.title = p.n;
+  el.innerHTML = p.c.map(c => `<i style="background:${c}"></i>`).join('');
+  el.onclick = () => {
+    if (i >= limites().paletas){ avisar('Paleta Pro'); return; }
+    estado.paleta = i; autoColorear(); colorActivo = p.c[2];
+    sincronizarControles(); pintar(false); empujar();
+  };
+  $('paletas').appendChild(el);
+});
+
+// --- fondos / materiales ---
+FONDOS.forEach(f => {
+  const el = document.createElement('div');
+  el.className = 'muestraFondo';
+  el.dataset.fondo = f.id;
+  el.title = f.n;
+  el.style.background = f.css || 'linear-gradient(135deg,#F2A65A,#C0392B)';
+  el.innerHTML = `<b>${f.n}</b>`;
+  el.onclick = () => {
+    estado.fondo = f.id;
+    sincronizarControles(); pintar(false); empujar();
+  };
+  $('fondos').appendChild(el);
+});
+
+// --- vistas / maquetas ---
+document.querySelectorAll('#vistas button').forEach(b => b.onclick = () => {
+  estado.vista = b.dataset.vista;
+  marcar('#vistas', 'vista', estado.vista);
+  pintar(true); empujar();
+});
+
+// --- modo sin color ---
+function ponerLineas(v){
+  estado.lineas = !!v;
+  marcar('#modoLineas', 'lineas', estado.lineas ? '1' : '0');
+  $('bLineas').classList.toggle('on', estado.lineas);
+  pintar(false); empujar();
+}
+document.querySelectorAll('#modoLineas button').forEach(b => b.onclick = () => ponerLineas(+b.dataset.lineas));
+$('bLineas').onclick = () => ponerLineas(!estado.lineas);
+$('bImprimir').onclick = () => {
+  estado.vista = 'plano'; estado.fondo = 'blanco'; estado.lineas = true;
+  sincronizarControles(); pintar(true); empujar();
+  avisar('Listo para imprimir y colorear');
+};
+
+// --- swatches del color activo ---
+function dibujarSwatches(){
+  const cont = $('swatches');
+  cont.innerHTML = '';
+  PALETAS[estado.paleta].c.forEach(c => {
+    const b = document.createElement('div');
+    b.className = 'sw' + (c.toLowerCase() === colorActivo.toLowerCase() ? ' on' : '');
+    b.style.background = c;
+    b.onclick = () => { colorActivo = c; dibujarSwatches(); };
+    cont.appendChild(b);
+  });
+  const wrap = document.createElement('label');
+  wrap.id = 'pickerWrap';
+  wrap.title = 'Elegir cualquier color';
+  const nucleo = document.createElement('i');
+  nucleo.style.background = colorActivo;
+  nucleo.textContent = '+';
+  const pk = document.createElement('input');
+  pk.type = 'color'; pk.value = colorActivo;
+  pk.oninput = () => { colorActivo = pk.value; nucleo.style.background = colorActivo;
+                       document.querySelectorAll('.sw').forEach(s => s.classList.remove('on')); };
+  wrap.appendChild(nucleo); wrap.appendChild(pk);
+  cont.appendChild(wrap);
+}
+
+// --- capas (alternativa a tocar el dibujo) ---
+function dibujarCapas(){
+  const cont = $('capas');
+  cont.innerHTML = '';
+  mandala.partes.forEach((p, i) => {
+    const b = document.createElement('div');
+    b.className = 'capa';
+    b.style.background = estado.colores[i] || '#333';
+    b.innerHTML = `<span>${i + 1}</span>`;
+    b.onclick = () => aplicarColor(i);
+    cont.appendChild(b);
+  });
+}
+
+function aplicarColor(i){
+  // Pintar estando en "solo líneas" guardaba el color sin mostrar nada: la app
+  // parecía rota. Si el usuario pinta, es que quiere ver color — se sale del
+  // modo línea solo.
+  if (estado.lineas){
+    estado.lineas = false;
+    marcar('#modoLineas', 'lineas', '0');
+    $('bLineas').classList.remove('on');
+    estado.colores[i] = colorActivo;
+    pintar(false);
+    avisar('Color activado');
+    clearTimeout(aplicarColor._t);
+    aplicarColor._t = setTimeout(empujar, 400);
+    return;
+  }
+  if (estado.colores[i] === colorActivo) return;
+  estado.colores[i] = colorActivo;
+  const g = svgHost.querySelector(`.parte[data-i="${i}"]`);
+  if (g) g.setAttribute(mandala.partes[i].trazo ? 'stroke' : 'fill', colorActivo);
+  const chip = $('capas').children[i];
+  if (chip) chip.style.background = colorActivo;
+  if (navigator.vibrate) navigator.vibrate(10);
+  clearTimeout(aplicarColor._t);
+  aplicarColor._t = setTimeout(empujar, 400);
+}
+
+// --- acciones ---
+bDeshacer.onclick = deshacer;
+bRehacer.onclick  = rehacer;
+
+/* =========================================================================
+   10. ZOOM Y PINTADO TÁCTIL
+   ========================================================================= */
+let vista = { esc:1, x:0, y:0 };
+const punteros = new Map();
+let base = null, movido = 0, tIni = 0;
+
+function aplicarVista(){
+  lienzo.style.transform = `translate(${vista.x}px,${vista.y}px) scale(${vista.esc})`;
+  botonesZoom();
+  const z = $('zoomInfo');
+  z.textContent = Math.round(vista.esc * 100) + '%';
+  z.classList.add('ver');
+  clearTimeout(aplicarVista._t);
+  aplicarVista._t = setTimeout(() => z.classList.remove('ver'), 900);
+}
+// Botones explícitos de zoom. Sin ellos la única forma de acercar eran el
+// pellizco y Ctrl+rueda, que no se ven por ninguna parte: para quien usa ratón
+// el zoom simplemente no existía.
+function zoom(factor){
+  const antes = vista.esc;
+  vista.esc = Math.min(8, Math.max(1, vista.esc * factor));
+  // Al alejar se recentra proporcionalmente, o el mandala se queda fuera de vista.
+  const k = vista.esc / antes;
+  vista.x *= k; vista.y *= k;
+  if (vista.esc === 1){ vista.x = 0; vista.y = 0; }
+  aplicarVista();
+}
+function botonesZoom(){
+  $('bMas').disabled   = vista.esc >= 8;
+  $('bMenos').disabled = vista.esc <= 1;
+}
+$('bMas').onclick   = () => zoom(1.35);
+$('bMenos').onclick = () => zoom(1 / 1.35);
+$('bZoom').onclick  = () => { vista = { esc:1, x:0, y:0 }; aplicarVista(); };
+
+const escenaEl = $('escena');
+
+// Los botones flotantes viven DENTRO de #escena. Sin esta guarda, el
+// setPointerCapture de abajo se traga el pointerup y el click del botón nunca
+// llega a dispararse: los cuatro botones de la esquina quedaban muertos.
+const enControl = e => !!(e.target.closest && e.target.closest('#acciones'));
+
+escenaEl.addEventListener('pointerdown', e => {
+  if (enControl(e)) return;
+  escenaEl.setPointerCapture(e.pointerId);
+  punteros.set(e.pointerId, { x:e.clientX, y:e.clientY });
+  if (punteros.size === 1){ movido = 0; tIni = Date.now(); }
+  base = null;
+});
+escenaEl.addEventListener('pointermove', e => {
+  if (!punteros.has(e.pointerId)) return;
+  const prev = punteros.get(e.pointerId);
+  punteros.set(e.pointerId, { x:e.clientX, y:e.clientY });
+
+  if (punteros.size === 1){
+    movido += Math.hypot(e.clientX - prev.x, e.clientY - prev.y);
+    if (vista.esc > 1.02){
+      vista.x += e.clientX - prev.x; vista.y += e.clientY - prev.y;
+      aplicarVista();
+    }
+  } else if (punteros.size === 2){
+    movido = 999;
+    const [a, b] = [...punteros.values()];
+    const dist = Math.hypot(a.x - b.x, a.y - b.y);
+    const cen  = { x:(a.x + b.x) / 2, y:(a.y + b.y) / 2 };
+    if (base){
+      vista.esc = Math.min(8, Math.max(1, vista.esc * (dist / base.dist)));
+      vista.x += cen.x - base.cen.x; vista.y += cen.y - base.cen.y;
+      aplicarVista();
+    }
+    base = { dist, cen };
+  }
+});
+escenaEl.addEventListener('pointerup', e => {
+  const era = punteros.size;
+  punteros.delete(e.pointerId);
+  base = null;
+  if (era === 1 && movido < 12 && Date.now() - tIni < 500 && !enControl(e)){
+    const el = document.elementFromPoint(e.clientX, e.clientY);
+    const g = el && el.closest ? el.closest('.parte') : null;
+    if (g) aplicarColor(+g.dataset.i);
+  }
+});
+escenaEl.addEventListener('pointercancel', e => { punteros.delete(e.pointerId); base = null; });
+
+// Rueda = zoom, como en cualquier visor de imágenes. Debajo del lienzo no hay
+// nada que desplazar (el panel tiene su propio scroll), así que la rueda aquí
+// no compite con ningún otro gesto.
+escenaEl.addEventListener('wheel', e => {
+  e.preventDefault();
+  zoom(e.deltaY < 0 ? 1.12 : 1 / 1.12);
+}, { passive:false });
+
+/* =========================================================================
+   11. CAPA DE ARCHIVO / COMPARTIR
+   Único punto del código que toca descargas, portapapeles o share.
+   Al empaquetar con Capacitor solo se reescribe esta sección.
+   ========================================================================= */
+function avisar(txt){
+  const a = $('aviso');
+  a.textContent = txt; a.classList.add('ver');
+  clearTimeout(avisar._t);
+  avisar._t = setTimeout(() => a.classList.remove('ver'), 1800);
+}
+
+async function entregar(blob, nombre){
+  const file = new File([blob], nombre, { type: blob.type });
+  if (navigator.canShare && navigator.canShare({ files:[file] })){
+    try { await navigator.share({ files:[file], title:'Mandala' }); return; }
+    catch (err){ if (err.name === 'AbortError') return; }
+  }
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = nombre; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+  avisar('Guardado: ' + nombre);
+}
+
+function svgBlob(){
+  return new Blob([svgMarkup({ marcaAgua: limites().marcaAgua })], { type:'image/svg+xml;charset=utf-8' });
+}
+
+async function guardarImagen(){
+  const px = limites().exportPx;
+  const str = svgMarkup({ px, marcaAgua: limites().marcaAgua });
+  const img = new Image();
+  img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(str);
+  await img.decode();
+  const cv = document.createElement('canvas');
+  cv.width = cv.height = px;
+  cv.getContext('2d').drawImage(img, 0, 0, px, px);
+  const blob = await new Promise(r => cv.toBlob(r, 'image/png'));
+  await entregar(blob, `mandala-${estado.semilla}.png`);
+}
+
+$('bPNG').onclick = () => guardarImagen().catch(() => avisar('No se pudo exportar'));
+$('bSVG').onclick = () => entregar(svgBlob(), `mandala-${estado.semilla}.svg`);
+
+/* =========================================================================
+   12. ARRANQUE
+   ========================================================================= */
+(function inicio(){
+  const q = parseInt(new URLSearchParams(location.search).get('seed') || '', 10);
+  estado.semilla = isNaN(q) ? Math.floor(Math.random() * 1e9) : q;
+  mandala = generar(estado.semilla, estado.cfg);
+  autoColorear();
+  sincronizarControles();
+  pintar(true);
+  botonesZoom();
+  empujar();
+
+  // Service worker: la app abre sin internet. Solo funciona servida por HTTPS
+  // (o localhost); con file:// el registro falla y no pasa nada — la app anda
+  // igual, simplemente sin caché offline.
+  if ('serviceWorker' in navigator && location.protocol.startsWith('http'))
+    window.addEventListener('load', () =>
+      navigator.serviceWorker.register('sw.js').catch(() => {}));
+})();
+</script>
+</body>
+</html>
