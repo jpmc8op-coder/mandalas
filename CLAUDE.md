@@ -748,6 +748,25 @@ encima del papel desaparecen, que es lo que corresponde en una lámina virgen.
 rellenos no se guardan y al pintar se sale del modo. Ese modo es para imprimir
 la lámina; este es para pintarla en pantalla.
 
+**Un toque pinta el anillo entero o una sola figura** (`estado.pincel`). El
+modelo original era una capa = un color: un toque pintaba las k copias de esa
+figura alrededor del anillo. Con simetría 12 y `repeticionesParaBanda`, k llega a
+**40**, así que un toque pintaba cuarenta figuras y parecía que la app coloreaba
+sola cosas que uno no tocó. Pintar el anillo entero es lo que hace rápido
+colorear un mandala, así que no se quita: se elige.
+
+- `estado.piezas` guarda las copias pintadas a mano: `"capa:copia" → color`.
+- Cada copia se emite con `data-j`, y el toque lee `data-j` del path que acertó
+  para saber cuál de las cuarenta es.
+- Solo las copias con color propio llevan atributo `fill`/`stroke`; el resto
+  hereda el del grupo, que es lo que hace barato pintar un anillo de un toque.
+- Pintar el anillo **borra** las copias sueltas de esa capa: si no, quedarían
+  con el color viejo y parecería que no obedeció.
+- `autoColorear()` y `vaciarColores()` limpian `piezas`: al recolorear por
+  paleta o al vaciar la lámina, los índices de copia dejan de valer.
+- Entrar a la lámina en blanco o a la página para colorear cambia el pincel a
+  **figura** solo: es lo que se espera al colorear a mano.
+
 **El fondo también se pinta.** El rectángulo de fondo se emite con
 `class="parte" data-i="-1"`, así que el mismo toque que pinta una figura lo
 pinta a él (`estado.fondoColor`). Es lo que permite colorear los espacios en
@@ -912,6 +931,13 @@ probabilidad de banda vacía **baja** con el Detalle, que es lo que más se nota
   siguiente nace en blanco.
 - Pintar sobre la página para colorear deja el resto de figuras en el color del
   papel (comprobado pieza por pieza), no las colorea todas.
+- Pincel por figura: en una capa de **40 copias**, pintar la copia 3 de rojo y la
+  9 de azul deja exactamente esas dos con color propio. Volver al pincel de
+  anillo pinta las 40 y borra las sueltas. Los colores individuales viajan a la
+  exportación, al guardado, al deshacer y a las miniaturas de la galería.
+- El toque acierta la copia exacta: `elementFromPoint` sobre el dibujo devuelve
+  `data-i` + `data-j`, y sobre un hueco devuelve el fondo (`data-i="-1"`).
+- 2100 combinaciones repetidas con y sin figuras pintadas a mano: SVG válido.
 - El fondo pintado se toca de verdad: `elementFromPoint` sobre un hueco devuelve
   el rect `data-i="-1"`, y la exportación a PNG sale con ese color (píxel de la
   esquina medido: exactamente el elegido).

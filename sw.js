@@ -11,7 +11,7 @@
 
    Al subir una versión, cambiar VERSION: eso deja obsoleta la caché anterior y
    `activate` la borra. */
-const VERSION = 'mandalas-v9';
+const VERSION = 'mandalas-v10';
 const RECURSOS = [
   './',
   './index.html',

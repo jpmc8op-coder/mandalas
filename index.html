@@ -329,6 +329,12 @@
     <p class="titulo">Paletas</p>
     <div class="ops" id="paletas"></div>
 
+    <p class="titulo">Un toque pinta</p>
+    <div class="seg ops" id="pinceles">
+      <button data-pincel="anillo" class="on">El anillo entero</button>
+      <button data-pincel="figura">Una sola figura</button>
+    </div>
+
     <p class="titulo">Color activo</p>
     <div id="swatches"></div>
 
@@ -3166,7 +3172,9 @@ const estado = {
   trazos: 'tinta',     // color de los contornos: tinta | varios | claro
   acabado: 'plano',    // textura del color: plano | acuarela | lapiz
   enBlanco: false,     // la mandala nace sin pintar, para colorearla a mano
-  fondoColor: null     // fondo pintado a mano; null = el que diga `fondo`
+  fondoColor: null,    // fondo pintado a mano; null = el que diga `fondo`
+  pincel: 'anillo',    // qué pinta un toque: 'anillo' (la capa) | 'figura' (una)
+  piezas: {}           // copias pintadas a mano: "capa:copia" -> color
 };
 let mandala = null;
 let colorActivo = PALETAS[0].c[2];
@@ -3176,7 +3184,8 @@ const historial = []; let hPtr = -1;
 function instantanea(){
   return JSON.stringify({ s:estado.semilla, c:estado.cfg, p:estado.paleta, k:estado.colores,
                           f:estado.fondo, v:estado.vista, l:estado.lineas, t:estado.trazos,
-                          a:estado.acabado, b:estado.enBlanco, g:estado.fondoColor });
+                          a:estado.acabado, b:estado.enBlanco, g:estado.fondoColor,
+                          n:estado.pincel, q:estado.piezas });
 }
 /* Lo que se está pintando sobrevive a cerrar la app. Se guarda la misma
    instantánea que usa el historial —semilla, ajustes, paleta y el color de cada
@@ -3227,6 +3236,8 @@ function aplicarSnap(snap){
   estado.acabado = o.a || 'plano';
   estado.enBlanco = !!o.b;
   estado.fondoColor = o.g || null;
+  estado.pincel = o.n || 'anillo';
+  estado.piezas = (o.q && typeof o.q === 'object') ? o.q : {};
   mandala = generar(estado.semilla, estado.cfg);
   // Red de seguridad para lo que se restaura de una sesión anterior: si la app
   // se actualizó y ese estilo ahora genera otro número de figuras, los colores
@@ -3365,6 +3376,7 @@ function tinta(){
    se guardan y al pintar se sale del modo — es para imprimir, no para pintar
    en pantalla. */
 function vaciarColores(){
+  estado.piezas = {};                 // los índices de copia dejan de valer
   const papel = opaco(colorFondo()), t = tinta();
   // Las sombras cel se pintan del color del papel: con opacidad 0.28 encima del
   // papel desaparecen, que es lo que corresponde en una lámina sin colorear.
@@ -3372,6 +3384,7 @@ function vaciarColores(){
 }
 
 function autoColorear(){
+  estado.piezas = {};                 // recolorear por paleta manda sobre lo pintado a mano
   const pal = PALETAS[estado.paleta].c;
   const n = pal.length - 2;
   estado.colores = mandala.partes.map((p, i) => {
@@ -3565,14 +3578,19 @@ function cuerpoMandala(lineas, paraExport, papel, capa){
       const rot = p.k > 1 ? `rotate(${(j * 360 / p.k + p.off).toFixed(2)})`
                           : (p.off ? `rotate(${p.off})` : '');
       const t = (rot || p.tr) ? ` transform="${rot}${p.tr || ''}"` : '';
+      // Copia pintada a mano: lleva su propio color, distinto al de su capa.
+      // El resto hereda el del grupo, que es lo que hace barato pintar un
+      // anillo entero de un toque.
+      const cj = estado.piezas[i + ':' + j];
+      const suyo = cj ? (p.trazo ? ` stroke="${cj}"` : ` fill="${cj}"`) : '';
       if (clipId){
-        s += `<g${t}><path d="${p.d}" clip-path="url(#${clipId})"/></g>`;
+        s += `<g${t}><path d="${p.d}" clip-path="url(#${clipId})" data-j="${j}"/></g>`;
         continue;
       }
-      s += `<path d="${p.d}"${t}/>`;
+      s += `<path d="${p.d}"${t}${suyo} data-j="${j}"/>`;
       // Zona de toque ampliada para los motivos que son solo línea
       if (p.trazo && !paraExport)
-        s += `<path d="${p.d}"${t} fill="none" stroke="transparent" stroke-width="34" pointer-events="stroke"/>`;
+        s += `<path d="${p.d}"${t} data-j="${j}" fill="none" stroke="transparent" stroke-width="34" pointer-events="stroke"/>`;
     }
     s += `</g>`;
   });
@@ -3723,6 +3741,7 @@ function sincronizarControles(){
   marcar('#vistas', 'vista', estado.vista);
   marcar('#trazos', 'trazos', estado.trazos);
   marcar('#acabados', 'acabado', estado.acabado);
+  marcar('#pinceles', 'pincel', estado.pincel);
   marcar('#modoLineas', 'lineas', estado.lineas ? '1' : '0');
   $('bLineas').classList.toggle('on', estado.lineas);
   marcarBlanco();
@@ -3781,7 +3800,8 @@ $('bAuto').onclick = () => {
 $('bBlanco').onclick = () => {
   if (estado.lineas) ponerLineas(false);   // en modo línea no se puede pintar
   estado.enBlanco = true; estado.fondoColor = null;
-  vaciarColores(); pintar(true); marcarBlanco(); empujar();
+  estado.pincel = 'figura';                // colorear a mano es figura por figura
+  vaciarColores(); pintar(true); marcarBlanco(); sincronizarControles(); empujar();
   avisar('Lámina en blanco: toca las figuras y también el fondo');
 };
 function marcarBlanco(){
@@ -4019,6 +4039,7 @@ function miniatura(snap){
     estado.fondo = o.f; estado.vista = 'plano'; estado.lineas = !!o.l;
     estado.trazos = o.t || 'tinta'; estado.acabado = 'plano';
     estado.enBlanco = !!o.b; estado.fondoColor = o.g || null;
+    estado.piezas = (o.q && typeof o.q === 'object') ? o.q : {};
     LIENZO_M = VB / 2;
     mandala = generar(estado.semilla, estado.cfg);
     if (estado.colores.length !== mandala.partes.length) colorearInicial();
@@ -4028,6 +4049,8 @@ function miniatura(snap){
   estado.semilla = r.s; estado.cfg = r.c; estado.paleta = r.p; estado.colores = r.k;
   estado.fondo = r.f; estado.vista = r.v; estado.lineas = r.l; estado.trazos = r.t;
   estado.acabado = r.a; estado.enBlanco = !!r.b; estado.fondoColor = r.g || null;
+  estado.pincel = r.n || 'anillo';
+  estado.piezas = (r.q && typeof r.q === 'object') ? r.q : {};
   mandala = pMandala; LIENZO_M = pLienzo;
   return svg;
 }
@@ -4062,7 +4085,19 @@ $('bGuardar').onclick = () => {
   avisar('Guardada en tu galería');
 };
 
-function aplicarColor(i){
+document.querySelectorAll('#pinceles button').forEach(b => b.onclick = () => {
+  estado.pincel = b.dataset.pincel;
+  marcar('#pinceles', 'pincel', estado.pincel);
+  avisar(estado.pincel === 'figura' ? 'Ahora pintas figura por figura'
+                                    : 'Ahora pintas el anillo entero');
+  empujar();
+});
+
+/* Pinta la capa `i`, o solo la copia `j` de esa capa si el pincel está en
+   "figura". Un mandala repite cada figura hasta 40 veces alrededor del anillo:
+   pintar la capa entera es lo que hace rápido colorear, pero al colorear a mano
+   uno espera que se pinte SOLO lo que tocó — que es justo lo que sorprendía. */
+function aplicarColor(i, j){
   // Pintar estando en "solo líneas" guardaba el color sin mostrar nada: la app
   // parecía rota. Si el usuario pinta, es que quiere ver color — se sale del
   // modo línea solo.
@@ -4077,9 +4112,16 @@ function aplicarColor(i){
     estado.enBlanco = true;
     vaciarColores();
     marcarBlanco();
-    estado.colores[i] = colorActivo;
+    // Al entrar a colorear, el pincel pasa a figura sola: es lo que se espera
+    // de una lámina, y con el anillo entero un solo toque pintaba 40 figuras.
+    estado.pincel = 'figura';
+    marcar('#pinceles', 'pincel', 'figura');
+    // El primer toque puede caer en el fondo, no en una figura.
+    if (i < 0) estado.fondoColor = colorActivo;
+    else if (j != null) estado.piezas[i + ':' + j] = colorActivo;
+    else estado.colores[i] = colorActivo;
     pintar(false);
-    avisar('Pintando sobre la lámina');
+    avisar('Pintando figura por figura');
     clearTimeout(aplicarColor._t);
     aplicarColor._t = setTimeout(empujar, 400);
     return;
@@ -4094,10 +4136,34 @@ function aplicarColor(i){
     aplicarColor._t = setTimeout(empujar, 400);
     return;
   }
-  if (estado.colores[i] === colorActivo) return;
+  const atributo = mandala.partes[i].trazo ? 'stroke' : 'fill';
+
+  // Una sola figura: solo esa copia cambia. Se pinta el path directamente, sin
+  // volver a generar el SVG entero.
+  if (estado.pincel === 'figura' && j != null){
+    const clave = i + ':' + j;
+    if (estado.piezas[clave] === colorActivo) return;
+    estado.piezas[clave] = colorActivo;
+    const el = svgHost.querySelector(`.parte[data-i="${i}"] [data-j="${j}"]`);
+    if (el) el.setAttribute(atributo, colorActivo);
+    if (navigator.vibrate) navigator.vibrate(10);
+    clearTimeout(aplicarColor._t);
+    aplicarColor._t = setTimeout(empujar, 400);
+    return;
+  }
+
+  // El anillo entero. Borra lo que se hubiera pintado a mano en esa capa: si no,
+  // quedarían copias sueltas del color viejo y parecería que no obedeció.
+  const habia = Object.keys(estado.piezas).some(k => k.startsWith(i + ':'));
+  if (estado.colores[i] === colorActivo && !habia) return;
   estado.colores[i] = colorActivo;
-  const g = svgHost.querySelector(`.parte[data-i="${i}"]`);
-  if (g) g.setAttribute(mandala.partes[i].trazo ? 'stroke' : 'fill', colorActivo);
+  if (habia){
+    Object.keys(estado.piezas).forEach(k => { if (k.startsWith(i + ':')) delete estado.piezas[k]; });
+    pintar(false);
+  } else {
+    const g = svgHost.querySelector(`.parte[data-i="${i}"]`);
+    if (g) g.setAttribute(atributo, colorActivo);
+  }
   const chip = $('capas').children[i];
   if (chip) chip.style.background = colorActivo;
   if (navigator.vibrate) navigator.vibrate(10);
@@ -4190,7 +4256,8 @@ escenaEl.addEventListener('pointerup', e => {
   if (era === 1 && movido < 12 && Date.now() - tIni < 500 && !enControl(e)){
     const el = document.elementFromPoint(e.clientX, e.clientY);
     const g = el && el.closest ? el.closest('.parte') : null;
-    if (g) aplicarColor(+g.dataset.i);
+    // `data-j` dice QUÉ copia de la capa se tocó, para poder pintar una sola.
+    if (g) aplicarColor(+g.dataset.i, el.dataset && el.dataset.j != null ? +el.dataset.j : null);
   }
 });
 escenaEl.addEventListener('pointercancel', e => { punteros.delete(e.pointerId); base = null; });
