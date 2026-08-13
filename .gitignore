@@ -6,11 +6,27 @@ _iconos.html
 ic/
 *.bak
 
-# Empaquetado nativo (Capacitor), cuando llegue
+# Empaquetado nativo (Capacitor)
 node_modules/
-android/
 ios/
+
+# `www/` y `assets/` se generan con dev/preparar-www.ps1 a partir de la raíz.
+www/
+assets/
+
+# El proyecto Android SÍ se versiona: lleva ajustes propios (colors.xml,
+# styles.xml). Lo que se ignora es lo que genera Gradle en cada compilación.
+android/build/
+android/app/build/
+android/.gradle/
+android/local.properties
+android/app/release/
+android/capacitor-cordova-android-plugins/
 .gradle/
+_apk/
+
+# Claves de firma: si se filtran, cualquiera puede publicar una actualización
+# haciéndose pasar por la app.
 *.keystore
 *.jks
 key.properties

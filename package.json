@@ -1,0 +1,16 @@
+{
+  "name": "mandalas",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Generador procedural de mandalas para colorear.",
+  "scripts": {
+    "www": "powershell -ExecutionPolicy Bypass -File dev/preparar-www.ps1",
+    "sync": "npm run www && npx cap copy && npx cap sync",
+    "android": "npm run sync && npx cap open android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.5.0",
+    "@capacitor/cli": "^8.5.0",
+    "@capacitor/core": "^8.5.0"
+  }
+}

@@ -943,7 +943,7 @@ Cuatro fases. Cada una se valida antes de pagar por la siguiente.
 | 0 | Repo git, iconos PNG, service worker, README | — | **hecho** |
 | 1 | Web pública en GitHub Pages (HTTPS gratis) | — | falta la cuenta de GitHub |
 | 2 | Instalable como app (PWA) desde el navegador | — | listo; se comprueba al estar en HTTPS |
-| 3 | APK/AAB nativo con Capacitor | requiere Node.js + Android Studio | pendiente |
+| 3 | APK nativo con Capacitor | — | **hecho** |
 | 4 | Publicación en tiendas | Google USD 25 pago único · Apple USD 99/año + Mac | pendiente |
 
 **Fase 0 (hecha).** `git init` + primer commit; `sw.js` (red primero para el
@@ -987,11 +987,47 @@ colores y tres formas.
 La URL queda `https://USUARIO.github.io/mandalas/`. Actualizar el enlace del
 README. Sin `gh` instalado, el push lo tiene que autenticar el usuario.
 
-**Fase 3.** `npm i @capacitor/core @capacitor/cli`, `npx cap init`,
-`npx cap add android`, la carpeta web es la raíz del proyecto. Ojo con lo ya
-resuelto en el código: `replaceState` en vez de `pushState` (el botón atrás del
-webview), `navigator.share` con respaldo a descarga, y `esPro()` en la sección 1
-como único punto donde se decide qué está bloqueado.
+**Fase 3 — hecha.** APK de depuración compilando y funcionando.
+
+```bash
+npm run android      # copia www, sincroniza y abre Android Studio
+```
+
+Compilar desde la línea de comandos, sin abrir Studio:
+
+```bash
+cd android
+$env:JAVA_HOME="C:\Program Files\Eclipse Adoptium\jdk-21.0.12.8-hotspot"
+.\gradlew.bat assembleDebug
+```
+
+El APK sale en `android/app/build/outputs/apk/debug/`. Pesa 5 MB, `minSdk 24`
+(Android 7 en adelante), `targetSdk 36`, id `com.jpmedina.mandalas`.
+
+**Cuatro cosas que hubo que resolver y volverán a aparecer:**
+
+1. **Android Studio "Quail" trae Java 25 y Gradle 8.14 no lo soporta**
+   (`Unsupported class file major version 69`). Hace falta un JDK 21 aparte
+   (`winget install EclipseAdoptium.Temurin.21.JDK`) y apuntar ahí `JAVA_HOME`.
+   No es del proyecto: le pasa a cualquier app Android con esa combinación.
+2. **La plantilla de Capacitor referencia `@color/colorPrimary`,
+   `colorPrimaryDark` y `colorAccent` en `styles.xml` pero no trae
+   `values/colors.xml`.** Sin ese archivo no compila.
+3. **`AppTheme.NoActionBar` trae `android:background = @null`**, y entre la
+   pantalla de arranque y la carga del WebView se cuela un destello blanco. Se
+   pone el fondo de la app (`#141821`), y de paso la barra de estado y la de
+   navegación.
+4. **`sw.js` no se copia a `www/`.** Dentro de una app nativa los archivos ya son
+   locales: la caché no aporta y puede dejar servida una versión vieja tras una
+   actualización. El registro en `index.html` falla en silencio si no está.
+
+`www/` y `assets/` se generan con `dev/preparar-www.ps1`; `android/` **sí** se
+versiona, porque lleva los ajustes de los puntos 2 y 3.
+
+Lo que ya venía resuelto en el código para este momento: `replaceState` en vez de
+`pushState` (el botón atrás del webview), `navigator.share` con respaldo a
+descarga, y `esPro()` en la sección 1 como único punto donde se decide qué está
+bloqueado.
 
 ## Pendiente
 - [x] ~~Galería local con `localStorage`~~ — hecha: 30 entradas de ~530 bytes.

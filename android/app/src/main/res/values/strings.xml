@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Mandalas</string>
+    <string name="title_activity_main">Mandalas</string>
+    <string name="package_name">com.jpmedina.mandalas</string>
+    <string name="custom_url_scheme">com.jpmedina.mandalas</string>
+</resources>

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Colores del tema nativo. La plantilla de Capacitor referencia estos tres
+     desde styles.xml pero no trae el archivo, así que sin esto no compila.
+     Son los mismos de la interfaz de la app para que no haya un salto de color
+     entre la pantalla de arranque y la aplicación. -->
+<resources>
+    <color name="colorPrimary">#141821</color>
+    <color name="colorPrimaryDark">#141821</color>
+    <color name="colorAccent">#F2A65A</color>
+    <!-- Fondo de la ventana: sin esto, entre la pantalla de arranque y la carga
+         del WebView se ve un destello blanco. -->
+    <color name="fondoApp">#141821</color>
+</resources>
