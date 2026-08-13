@@ -932,6 +932,19 @@ no bastan con SVG); metas de `apple-mobile-web-app-*`; `.gitignore` y `README`.
 > blanco: Chrome impone un tamaño mínimo de ventana y el `--window-size` chico
 > se ignora. El archivo salía de 700 bytes en vez de 19 KB, que es la señal.
 
+**El icono se decidió mirándolo a 48 px, no a 512.** El primero era azul noche
+con tres anillos, ocho pétalos y doce puntos: a tamaño de escritorio se veía
+bien, pero en la pantalla del teléfono era una mancha oscura con ruido. El de
+ahora tiene tres elementos y tres colores —seis pétalos rosa, seis puntos
+turquesa y el centro amarillo, sobre crudo— y es el que sigue leyéndose chico.
+La comparación se hace con una hoja que muestra los candidatos a 190, 96 y 48 px,
+esta última sobre fondo oscuro, que es como se ve en un escritorio de Android.
+
+> **Zona segura del recorte circular:** Android recorta el icono `maskable` a un
+> círculo del 80% del lado, o sea radio 205 de 256. La primera versión de este
+> icono llegaba a 206 y le habría cortado las puntas a los pétalos; se bajó a
+> 194.
+
 **Fase 1.** Repo público `mandalas` en GitHub → `git remote add origin` →
 `git push -u origin main` → Settings ▸ Pages ▸ Deploy from branch `main` / root.
 La URL queda `https://USUARIO.github.io/mandalas/`. Actualizar el enlace del
