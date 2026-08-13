@@ -4,7 +4,7 @@ Generador procedural de mandalas para colorear. Elige un estilo, genera con una
 semilla y pinta cada capa con un toque. Funciona en el navegador, sin cuenta,
 sin conexión y sin instalar nada.
 
-**Probarla:** https://USUARIO.github.io/mandalas/ *(pendiente de publicar)*
+**Probarla:** https://jpmc8op-coder.github.io/mandalas/
 
 ## Qué hace
 
