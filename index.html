@@ -68,7 +68,7 @@
      El retraso de cada anillo viaja en `--d`, calculado con su radio, y el
      origen de la escala es el centro del lienzo (0,0 del viewBox), que es
      exactamente el centro del mandala: por eso las piezas salen de ahí. */
-  #svgHost.construye g.parte{animation:brota .42s cubic-bezier(.22,1,.36,1) backwards;
+  #svgHost.construye g.parte{animation:brota .26s cubic-bezier(.22,1,.36,1) backwards;
                              animation-delay:var(--d,0s)}
   @keyframes brota{from{opacity:0;transform:scale(.45)}to{opacity:1;transform:none}}
 
@@ -1754,55 +1754,13 @@ const MOTIVOS = {
   }
 };
 
-/* Dígitos de siete segmentos, para la numeración estarcida de las unidades.
-   Caja de ±20 × ±34; se colocan con `tr`, como las siluetas de animales.   */
-const SEGMENTOS = {
-  a:'M -14,-32 L 14,-32 L 9,-25 L -9,-25 Z',
-  b:'M 17,-30 L 17,-4 L 11,-9 L 11,-25 Z',
-  c:'M 17,4 L 17,30 L 11,25 L 11,9 Z',
-  d:'M -14,32 L 14,32 L 9,25 L -9,25 Z',
-  e:'M -17,4 L -17,30 L -11,25 L -11,9 Z',
-  f:'M -17,-30 L -17,-4 L -11,-9 L -11,-25 Z',
-  g:'M -13,0 L -8,-5 L 8,-5 L 13,0 L 8,5 L -8,5 Z'
-};
-// Solo las letras que el display de siete segmentos sabe formar. Basta para
-// los códigos de bahía del tipo E-75, A-12 o CF-09 de las referencias.
-const GLIFOS = {
-  '0':'abcdef','1':'bc','2':'abdeg','3':'abcdg','4':'bcfg','5':'acdfg',
-  '6':'acdefg','7':'abc','8':'abcdefg','9':'abcdfg',
-  'A':'abcefg','B':'cdefg','C':'adef','D':'bcdeg','E':'adefg','F':'aefg',
-  'H':'bcefg','L':'def','P':'abefg','U':'bcdef','-':'g'
-};
-
-// Texto estarcido, centrado en el origen. Los caracteres desconocidos se
-// ignoran en vez de romper el path.
-function textoPath(txt){
-  const cars = [...String(txt).toUpperCase()].filter(c => GLIFOS[c]);
-  const anchoD = 44, total = cars.length * anchoD;
-  let d = '';
-  cars.forEach((ch, i) => {
-    const dx = -total/2 + anchoD/2 + i*anchoD;
-    [...GLIFOS[ch]].forEach(seg => {
-      d += ' ' + SEGMENTOS[seg].replace(/(-?[\d.]+),(-?[\d.]+)/g,
-             (_, x, y) => `${(+x + dx).toFixed(1)},${y}`);
-    });
-  });
-  return d.trim();
-}
-const numeroPath = textoPath;
-
-// Código de bahía al estilo de los rótulos del hangar.
-function codigoBahia(rnd){
-  const letras = 'ABCDEFHLPU';
-  const l = () => letras[Math.floor(rnd() * letras.length)];
-  const n = (max) => String(Math.floor(rnd() * max)).padStart(2, '0');
-  return elegir(rnd, [
-    () => `${l()}-${n(100)}`,
-    () => `${n(100)}-${l()}${Math.floor(rnd()*10)}`,
-    () => `${l()}${l()}-${Math.floor(rnd()*10)}`,
-    () => n(100)
-  ])();
-}
+/* Aquí vivían los dígitos de siete segmentos (`SEGMENTOS`, `GLIFOS`,
+   `textoPath`, `codigoBahia`) con los que el estilo robot ponía códigos de
+   bahía tipo E-75 en un anillo. Se quitaron enteros: a tamaño de anillo esas
+   letras salen enormes y el ojo se va a LEERLAS en vez de mirar el mandala.
+   La señalética del género se resuelve mejor con pictogramas —franjas de
+   peligro, triángulos, flechas, dianas, código de barras—, que dicen lo mismo
+   sin gritar. Los motivos `codigo` y `placaTexto` ya sugieren texto sin serlo. */
 
 /* Subdivisión de Koch: cada segmento se parte en tres y el tramo central se
    sustituye por dos lados de un triángulo equilátero que apunta hacia afuera. */
@@ -3154,10 +3112,16 @@ function generarRobot(semilla, cfg){
       sombra(base, r0, r1, k, 0.99, off);                          // sombreado cel
       poner(base, r0 + h*0.11, r1 - h*0.11, k, 0.76, off, true);   // línea de panel
 
-      // Detalle en el tercio exterior de la placa: la señalética.
-      poner(elegir(rnd, ['etiqueta','placaTexto','teclas','codigo','flechaDir','flechaDir',
-                         'peligro','barrasAviso','trianguloAviso','cruzAviso','diamante']),
+      // Detalle en el tercio exterior de la placa: la señalética. Es lo que más
+      // dice "mecha de anime" de todo el vocabulario, y con los códigos de bahía
+      // fuera hay que apoyarse aquí: el aviso va casi siempre, y a veces doble.
+      poner(elegir(rnd, ['peligro','peligro','barrasAviso','barrasAviso','flechaDir','flechaDir',
+                         'trianguloAviso','cruzAviso','diana','etiqueta','placaTexto',
+                         'codigo','teclas','diamante']),
             r0 + h*0.56, r1 - h*0.13, k, 0.58, off);
+      if (rnd() < 0.24 + dens * 0.4)
+        poner(elegir(rnd, ['flechaDir','cruzAviso','trianguloAviso','diana','codigo']),
+              r0 + h*0.30, r0 + h*0.52, k, 0.34, off + hw*0.5);
       // Detalle en el tercio interior: tornillería, unión o engranaje.
       poner(elegir(rnd, ['brida','discoJunta','remaches','rejilla','sensor','diana',
                          'tuerca','perilla','pinon','rotula','acople','bisagra']),
@@ -3174,14 +3138,20 @@ function generarRobot(semilla, cfg){
       return;
     }
 
-    // --- Banda estrecha: rótulo de bahía, o una pieza suelta ---
-    if (alto > 34 && rnd() < 0.30){
-      const kN = Math.max(4, Math.min(k, 12));
-      const cuerda = 2 * mid * Math.sin(180 / kN * D2R);
-      const txt = codigoBahia(rnd);
-      const sN = Math.min(alto * 0.72, cuerda / Math.max(txt.length, 1) * 1.5) / 74;
-      add(textoPath(txt), kN, ((iB + faseR) % 2) ? 180 / kN : 0, false, 0,
-          ` translate(0,${(-mid).toFixed(1)}) scale(${sN.toFixed(3)})`);
+    // --- Banda estrecha: franja de señalética ---
+    // Aquí iba un anillo de códigos de bahía en dígitos de siete segmentos
+    // (`codigoBahia`). Se quitó: a tamaño de anillo esas letras salen enormes,
+    // se leen como texto y el ojo se va a leerlas en vez de mirar el mandala.
+    // La señalética del género funciona mejor con pictogramas —franjas de
+    // peligro, triángulos, flechas, dianas—, que dicen lo mismo sin gritar.
+    if (alto > 34 && rnd() < 0.34){
+      const kN = Math.max(6, Math.min(k, 20));
+      poner(elegir(rnd, ['peligro','barrasAviso','flechaDir','trianguloAviso',
+                         'cruzAviso','diana','codigo','pines']),
+            r0, r1, kN, 0.92, ((iB + faseR) % 2) ? 180 / kN : 0);
+      if (rnd() < dens * 0.6)
+        poner(elegir(rnd, ['remaches','tuerca','punto']),
+              r0 + alto*0.24, r1 - alto*0.24, kN, 0.4, 180 / kN);
       if (rnd() < 0.6) add(circuloPath(0, 0, r1), 1, 0, true, g * 0.7);
       return;
     }
@@ -3224,14 +3194,42 @@ const ESTILOS = {
   circuito: { n:'Circuitos',      pal:'Circuito', gen:generarCircuito },
   natura:   { n:'Naturaleza',     pal:'Escarcha', gen:generarNatura },
   animal:   { n:'Animales',       pal:'Fauna',    gen:generarAnimales },
-  robot:    { n:'Robots · Mecha', pal:'Casco',    gen:generarRobot }
+  robot:    { n:'Robots · Mecha', pal:'Escuadrón', gen:generarRobot }
 };
+
+/* Los aros que separan anillo de anillo se marcan y se apagan aquí, en un solo
+   sitio, en vez de en las veinte llamadas repartidas por los siete generadores.
+
+   Un aro es un círculo completo, de trazo, centrado en el origen y de radio
+   grande — los circulitos de un motivo van en `pt(0, mid)`, así que tienen la
+   `y` distinta de cero, y los del núcleo son de radio pequeño.
+
+   Se le hacen dos cosas: adelgazarlo a la mitad y **mandarlo detrás** de las
+   figuras de su propia banda (`z = -radio - 8`; más negativo = se dibuja
+   antes). Antes se emitía con la z de la banda y, al ir después, cruzaba por
+   encima de las figuras. */
+function asentarAros(m){
+  // `circuloPath` escribe el centro con dos decimales: la Y de un aro es
+  // "0.00", no "0". Con `,0 ` a secas esto no acertaba ni un solo aro.
+  const CIRC = /^M (-?[\d.]+),0(?:\.0+)? a ([\d.]+),\2 /;
+  m.partes.forEach(p => {
+    if (p.k !== 1 || !p.trazo || p.tr) return;
+    const c = CIRC.exec(p.d);
+    if (!c) return;
+    const r = +c[2];
+    if (r < 130) return;              // el núcleo no es un aro de separación
+    p.aro = true;
+    p.grosor = Math.max(p.grosor * 0.5, 0.9);
+    p.z = -r - 8;
+  });
+  return m;
+}
 
 function generar(semilla, cfg){
   const id = (ESTILOS[cfg.estilo] && limites().estilos.includes(cfg.estilo)) ? cfg.estilo : 'geo';
   const m = ESTILOS[id].gen(semilla, cfg);
   m.estilo = id;
-  return m;
+  return asentarAros(m);
 }
 
 /* =========================================================================
@@ -3276,6 +3274,11 @@ const PALETAS = [
      cinco, y el mandala deja de repetirse tan rápido. El primero sigue siendo
      el contorno y el último, el papel. */
   { n:'Fauna',     c:['#241A12','#C1502E','#E0A030','#2E9E8F','#E4655C','#6B8F3A','#F5EAD8'] },
+  /* Mecha de anime, pero encendido. El gris de casco era fiel y aburrido: los
+     robots del género son azul ultramar, rojo señal y amarillo de aviso, con el
+     turquesa del reactor. El primero sigue siendo casi negro para que la
+     señalética recorte, y el último, el gris de chapa que hace de papel. */
+  { n:'Escuadrón', c:['#101623','#1E5AA8','#D93A2B','#F0B429','#25B7A6','#6F7F94','#E8EDF3'] },
   { n:'Selva',     c:['#12301F','#1E6B3A','#5FA83C','#C9A227','#2E8B9E','#D96A3A','#F2ECD9'] },
   { n:'Plumaje',   c:['#161226','#2F3E9E','#3E8FD0','#6BC5B5','#E86A5E','#F2B33D','#F4EFE6'] }
 ];
@@ -3519,6 +3522,10 @@ function autoColorear(){
     // Las sombras cel van al tono más oscuro: borde duro y plano, como en el
     // anime. Que coincida con el color del contorno es justo lo que se busca.
     if (p.sombra) return pal[0];
+    // Los aros de separación en un tono medio, no en el más oscuro: son una
+    // guía del reparto de anillos, no una figura, y en negro competían con el
+    // dibujo en vez de acompañarlo.
+    if (p.aro) return pal[Math.max(1, n - 1)];
     if (!p.trazo) return pal[1 + (i % n)];
     // Los contornos ya no van todos al color más oscuro: el usuario elige.
     if (estado.trazos === 'varios') return pal[1 + ((i + 2) % n)];
@@ -3704,7 +3711,7 @@ function cuerpoMandala(lineas, paraExport, papel, capa){
 
     // Retraso de aparición: cuanto más lejos del centro, más tarde. Es lo que
     // hace que el mandala se vea CRECER en vez de aparecer.
-    const dem = paraExport ? '' : ` style="--d:${(Math.min(-(p.z || 0) / 460, 1) * 0.34).toFixed(3)}s"`;
+    const dem = paraExport ? '' : ` style="--d:${(Math.min(-(p.z || 0) / 460, 1) * 0.19).toFixed(3)}s"`;
 
     s += `<g class="parte" data-i="${i}"${dem} fill="${relleno}" stroke="${trz}" stroke-width="${gr.toFixed(1)}" `
        + (p.evenodd ? `fill-rule="evenodd" ` : '')
@@ -3994,16 +4001,6 @@ function regenerar(nuevaSemilla, animar){
    deja las figuras nuevas donde antes había huecos.
    La transición se pone y se quita: si quedara siempre, el zoom y el arrastre
    irían con retraso detrás del dedo. */
-function girarLienzo(grados){
-  // Acotado a una vuelta: si no, arrastrando el deslizador se acumulan miles de
-  // grados y el número deja de decir nada.
-  vista.rot = ((vista.rot || 0) + grados) % 360;
-  lienzo.classList.add('gira');
-  aplicarVista();
-  clearTimeout(girarLienzo._t);
-  girarLienzo._t = setTimeout(() => lienzo.classList.remove('gira'), 420);
-}
-
 [['sSimetria','oSimetria','simetria'],['sAnillos','oAnillos','anillos'],['sDensidad','oDensidad','densidad']]
 .forEach(([sl, ou, key]) => {
   const s = $(sl);
@@ -4011,13 +4008,11 @@ function girarLienzo(grados){
     $(ou).value = s.value; estado.cfg[key] = +s.value;
     regenerar();
   });
-  s.addEventListener('change', () => {
-    // El giro va al SOLTAR, no en cada paso del arrastre: con una transición de
-    // 380 ms lanzándose veinte veces por segundo, el dibujo persigue al dedo con
-    // retraso y se siente pesado. Al soltar, en cambio, se acomoda de una vez.
-    if (key === 'simetria') girarLienzo(180 / Math.max(estado.cfg.simetria, 3));
-    empujar();
-  });
+  // Mover Simetría NO gira el mandala. Se probó (medio sector al soltar, como
+  // un caleidoscopio) y molesta: al ajustar la simetría uno está comparando
+  // formas, y que además cambie de orientación obliga a reencuadrar la vista en
+  // cada paso. El giro queda solo para volver a "ver entera".
+  s.addEventListener('change', empujar);
 });
 
 Object.keys(ESTILOS).forEach(id => {

@@ -375,9 +375,15 @@ todo, de fotogramas de referencia de panelado de hangar que aportó el usuario:
   puntería), `codigo` (código de barras estarcido), `placaTexto` (recuadro con
   renglones de texto vaciados), `trianguloAviso` (con la exclamación hueca),
   `cruzAviso` (el pictograma de cinco cuadrados del panel), `barrasAviso` (las
-  barras diagonales que acompañan a las etiquetas), y la **numeración de
-  unidad**: dígitos de siete segmentos (`SEGMENTOS`, `GLIFOS`, `textoPath()`)
-  colocados con `tr`, como las siluetas de animales.
+  barras diagonales que acompañan a las etiquetas) y `flechaDir`.
+
+  **Nada de letras de verdad.** Hubo un anillo de códigos de bahía tipo `E-75`
+  con dígitos de siete segmentos (`SEGMENTOS`, `GLIFOS`, `textoPath`,
+  `codigoBahia`, todos borrados). A tamaño de anillo esas letras salen enormes,
+  se leen como texto y el ojo se va a leerlas en vez de mirar el mandala. Los
+  pictogramas dicen lo mismo sin gritar, y `codigo` y `placaTexto` sugieren
+  texto sin serlo. Al quitarlas se subió el peso de la señalética en el conjunto
+  de placa: el aviso va casi siempre y a veces doble.
 - **Artillería: solo la familia del cañón.** `canon`, `canonDoble` (dos tubos
   con puente de unión), `railgun` (tubo con anillos aceleradores), `multitubo`,
   `bocacha` (con venteos laterales).
@@ -484,10 +490,12 @@ display sabe formar (A B C D E F H L P U y el guion); `textoPath()` compone la
 cadena y `codigoBahia()` inventa códigos del tipo `E-75`, `15-E9` o `CF-09`.
 Los caracteres no representables se ignoran en vez de romper el path.
 
-Paletas propias: `Casco` (la de defecto: grises azulados de casco más el
-amarillo de aviso del panelado de hangar), `Titanio`, `Hangar`, `Reactor`,
-`Alerta`, más `Mecha` (los primarios del RX-78) y `Eva`. El defecto NO son los
-primarios: no dicen "máquina".
+Paleta de defecto: **`Escuadrón`**, de siete colores — azul ultramar, rojo
+señal, amarillo de aviso, turquesa de reactor y gris de chapa, sobre casi negro.
+Antes era `Casco` (grises azulados y amarillo de hangar): fiel al panelado, pero
+apagado; al abrir el estilo por primera vez no evocaba el género. El resto
+siguen disponibles: `Casco`, `Titanio`, `Hangar`, `Reactor`, `Alerta`, `Mecha`
+(los primarios del RX-78) y `Eva`.
 
 Muchos de estos motivos usan `fill-rule="evenodd"` para vaciar el interior
 (damero de la etiqueta, tornillos de la brida, rayo del diamante, cubo del
@@ -677,6 +685,24 @@ entrar en esa guarda.
   colorear) que sobre negro u oro (previsualización de estampado).
 - **Sin librerías, sin red, sin fuentes remotas.** Funciona offline.
 
+### Los aros de separación se apagan en un solo sitio
+
+`asentarAros()` corre después de cada generación y marca los círculos completos
+de trazo, centrados en el origen y de radio mayor que 130 —los del núcleo son
+más pequeños, y los circulitos de un motivo van en `pt(0, mid)`, con la `y`
+distinta de cero—. A cada uno le hace tres cosas: `aro = true`, la mitad de
+grosor, y **`z = -radio - 8`** para que quede detrás de las figuras de su banda.
+
+Antes cada generador emitía sus aros con la z de la banda, y al añadirse después
+salían dibujados ENCIMA, cruzando las figuras. Hacerlo aquí evita repetir el
+arreglo en las veinte llamadas repartidas por los siete generadores. En
+`autoColorear()` reciben un tono medio en vez del más oscuro: son una guía del
+reparto de anillos, no una figura.
+
+> El detector es una expresión regular sobre el `d`. `circuloPath` escribe el
+> centro con dos decimales, así que la Y de un aro es `0.00`: buscando `,0 ` a
+> secas no acertaba **ni uno**, y la comprobación pasaba en verde por vacía.
+
 ### Movimiento: que se sienta creación, no cálculo
 
 El mandala aparecía **entero y de golpe**. Da igual lo bueno que sea el
@@ -685,19 +711,18 @@ piezas, y ninguna es decorativa:
 
 1. **Brota desde el centro** (`#svgHost.construye`). Cada capa entra con
    `opacity` y `scale` y un retraso `--d` sacado de su radio: 0 en el centro,
-   0.34 s en el borde. El origen de la escala en un `<g>` de SVG es el `0,0` del
+   0.19 s en el borde, con 0.26 s de duración. La primera versión iba a 0.42 y
+   0.34: se veía bonita una vez y estorbaba a partir de la tercera. El origen de la escala en un `<g>` de SVG es el `0,0` del
    viewBox, que aquí es el centro exacto del mandala — por eso las piezas
    parecen salir de ahí sin necesidad de calcular nada.
    Se reserva para cuando aparece un mandala **nuevo** (Generar, cambiar de
    estilo). En cada retoque de color cansa y hace la app lenta de usar; deshacer
    tampoco anima, porque es una corrección, no una creación.
-2. **Giro de caleidoscopio al soltar Simetría** (`girarLienzo`). Medio sector
-   de giro con transición: el ojo lee una rotación continua en vez de un corte
-   de plano, y ese medio sector deja las figuras nuevas donde antes había
-   huecos. **Al soltar, no durante el arrastre**: una transición de 380 ms
-   relanzada veinte veces por segundo hace que el dibujo persiga al dedo. La
-   clase `gira` se pone y se quita, porque si quedara fija el zoom y el
-   desplazamiento irían con retraso.
+2. **Mover Simetría NO gira el mandala.** Se probó —medio sector de giro al
+   soltar, como un caleidoscopio— y se quitó: al ajustar la simetría uno está
+   comparando formas, y que además cambie de orientación obliga a reencuadrar la
+   vista en cada paso. El giro quedó solo para "ver entera", que devuelve la
+   rotación a cero con transición.
 3. **La figura empapa el color** (`.empapa`). Anima `fill-opacity`, **no**
    `transform`: las copias llevan su rotación como atributo y una transformación
    de CSS la pisaría — la figura saltaría de sitio al pintarla.
@@ -1040,6 +1065,10 @@ probabilidad de banda vacía **baja** con el Detalle, que es lo que más se nota
 - La zona de toque ampliada de los motivos de línea bajó de 34 unidades fijas a
   `grosor × 2.2` (mínimo 10): con 34 se comía los toques de las figuras vecinas
   y no había zoom que valiera.
+- Aros: detectados en los siete estilos (36 a 219 por cada 40 mandalas), **cero
+  mal colocados** — todos quedan detrás de las figuras de su banda, comprobado
+  contra el orden real de los grupos en el SVG—, grosor medio de 1.1 a 3.1, y
+  ninguno dentro del núcleo del yantra.
 - El fondo pintado se toca de verdad: `elementFromPoint` sobre un hueco devuelve
   el rect `data-i="-1"`, y la exportación a PNG sale con ese color (píxel de la
   esquina medido: exactamente el elegido).
