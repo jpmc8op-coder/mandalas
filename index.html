@@ -3525,13 +3525,23 @@ function cuerpoMandala(lineas, paraExport, papel, capa){
     .map((p, i) => i)
     .sort((a, b) => (mandala.partes[a].z || 0) - (mandala.partes[b].z || 0));
 
+  // "Lámina" = todo lleva su contorno de tinta, esté pintado o no. Vale tanto
+  // para el modo línea (papel en todos los rellenos) como para la lámina en
+  // blanco que se va coloreando.
+  //
+  // Sin esto, al dar el primer color se salía del modo línea y el dibujo pasaba
+  // a pintarse solo con rellenos: las figuras que no tienen capa de contorno
+  // propia se quedaban SIN borde y no se veía qué faltaba por pintar. Es lo
+  // primero que se nota al colorear de verdad.
+  const laminar = lineas || estado.enBlanco;
+
   orden.forEach(i => {
     const p = mandala.partes[i];
-    // Las sombras no van en la lámina para colorear: ahí solo interesa el
+    // Las sombras no van en una lámina para colorear: ahí solo interesa el
     // dibujo limpio.
-    if (p.sombra && lineas) return;
-    // En modo línea todo es contorno, así que no se separa.
-    if (capa && !lineas){
+    if (p.sombra && laminar) return;
+    // En lámina todo es contorno, así que no se separa.
+    if (capa && !laminar){
       if (capa === 'relleno' && p.trazo) return;
       if (capa === 'trazo' && !p.trazo) return;
     }
@@ -3541,9 +3551,11 @@ function cuerpoMandala(lineas, paraExport, papel, capa){
     // cruzando las del anillo de al lado: queda una lámina limpia, con las
     // figuras interiores enteras sobre las exteriores. De paso el interior
     // sigue siendo sensible al toque (con `none` no lo sería).
-    const relleno = lineas ? (p.trazo ? 'none' : (papel || 'transparent'))
-                           : (p.trazo ? 'none' : col);
-    const trz     = lineas ? tin   : (p.trazo ? col : 'none');
+    // En lámina el relleno es papel (modo línea) o el color que se le haya dado
+    // (lámina en blanco), y el contorno SIEMPRE es tinta: es lo que deja ver
+    // qué falta por pintar.
+    const relleno = p.trazo ? 'none' : (lineas ? (papel || 'transparent') : col);
+    const trz     = laminar ? tin : (p.trazo ? col : 'none');
     // En modo línea, las figuras macizas se pintan con `paint-order="stroke
     // fill"`: primero el trazo y encima el relleno. Así el relleno tapa los
     // trazos que caen DENTRO de la figura y solo queda visible su contorno
@@ -3551,8 +3563,8 @@ function cuerpoMandala(lineas, paraExport, papel, capa){
     // animal más sus patas y alas) mostraba las líneas internas cruzándola,
     // como si las piezas estuvieran separadas en vez de fundidas.
     // El grosor se dobla porque la mitad interior del trazo queda tapada.
-    const unir    = lineas && !p.trazo;
-    const gr      = lineas ? (unir ? 5.2 : 2.6) : (p.trazo ? p.grosor : 0);
+    const unir    = laminar && !p.trazo;
+    const gr      = laminar ? (unir ? 5.2 : 2.6) : (p.trazo ? p.grosor : 0);
 
     // Las piezas con `recorte` (las sombras cel) se recortan con la silueta de
     // la figura a la que sombrean. El recorte y la rotación van en el MISMO
@@ -3568,7 +3580,7 @@ function cuerpoMandala(lineas, paraExport, papel, capa){
        // La sombra se atenúa con opacidad, no eligiendo un tono más claro: así
        // oscurece lo que tiene debajo sea cual sea el color de la pieza, y
        // funciona igual con cualquier paleta.
-       + (p.sombra ? `opacity="0.28" ` : '')
+       + (p.sombra ? `opacity="0.28" data-s="1" ` : '')
        + `stroke-linecap="round" stroke-linejoin="round">`;
     if (clipId)
       s += `<defs><clipPath id="${clipId}"><path d="${p.recorte}"`
@@ -3588,19 +3600,61 @@ function cuerpoMandala(lineas, paraExport, papel, capa){
         continue;
       }
       s += `<path d="${p.d}"${t}${suyo} data-j="${j}"/>`;
-      // Zona de toque ampliada para los motivos que son solo línea
+      // Zona de toque ampliada para los motivos que son solo línea. Ojo con el
+      // ancho: con 34 unidades, la banda invisible de una línea se comía los
+      // toques de las figuras vecinas y no había zoom que valiera — se tocaba
+      // una figura y se pintaba otra. Se ajusta al grosor real de la línea.
       if (p.trazo && !paraExport)
-        s += `<path d="${p.d}"${t} data-j="${j}" fill="none" stroke="transparent" stroke-width="34" pointer-events="stroke"/>`;
+        s += `<path d="${p.d}"${t} data-j="${j}" fill="none" stroke="transparent" `
+           + `stroke-width="${Math.max(gr * 2.2, 10).toFixed(1)}" pointer-events="stroke"/>`;
     }
     s += `</g>`;
   });
   return s;
 }
 
+/* Celdas del fondo: los huecos entre figuras, como zonas pintables sueltas.
+   Antes el fondo era UN rectángulo: tocar un hueco pintaba todo el fondo de
+   golpe, que al colorear no es lo que se quiere.
+
+   No se pueden recortar los huecos de verdad —son el negativo del dibujo, y
+   eso pide operaciones booleanas sobre trazados que el navegador no trae—, así
+   que se cubre el fondo con una retícula de sectores de corona que sigue la
+   estructura del propio mandala: los cortes salen de los radios de sus anillos
+   y los sectores, de su simetría. Cada celda se pinta sola y queda DETRÁS del
+   dibujo, así que las figuras siguen ganando el toque donde se superponen. */
+let CELDAS = { token: '', lista: [] };
+function celdasFondo(){
+  const token = estado.semilla + '|' + JSON.stringify(estado.cfg) + '|' + LIENZO_M;
+  if (CELDAS.token === token) return CELDAS.lista;
+
+  const radios = [...new Set(mandala.partes.filter(p => p.k > 1)
+                    .map(p => Math.round(-(p.z || 0))))]
+                 .filter(r => r > 10).sort((a, b) => a - b);
+  let cortes = [8];
+  for (let i = 0; i < radios.length - 1; i++) cortes.push(Math.round((radios[i] + radios[i+1]) / 2));
+  cortes.push(Math.round(LIENZO_M));
+  // Fuera las bandas demasiado finas para acertarles con el dedo.
+  cortes = cortes.filter((v, i) => i === 0 || v - cortes[i-1] > 18);
+  if (cortes[cortes.length-1] < LIENZO_M - 4) cortes.push(Math.round(LIENZO_M));
+
+  const N = Math.max(4, Math.min(estado.cfg.simetria, 24)), paso = 360 / N;
+  const lista = [];
+  for (let b = 0; b < cortes.length - 1; b++)
+    for (let s = 0; s < N; s++){
+      const a0 = -paso/2 + s*paso;
+      lista.push(sectorAnillo(cortes[b], cortes[b+1], a0, a0 + paso));
+    }
+  CELDAS = { token, lista };
+  return lista;
+}
+
 /* Emite el mandala. Sin acabado va de una pasada. Con acabado va en dos: los
    rellenos texturizados dentro del filtro y los contornos limpios encima. */
 function pintado(lineas, paraExport, papel, filtro, tr){
-  if (!filtro || lineas)
+  // En lámina no se separan relleno y trazo: `cuerpoMandala` ignora el filtro
+  // de capa, así que las dos pasadas dibujarían el mandala entero dos veces.
+  if (!filtro || lineas || estado.enBlanco)
     return `<g${tr}${filtro}>` + cuerpoMandala(lineas, paraExport, papel) + `</g>`;
   return `<g${tr}${filtro}>` + cuerpoMandala(lineas, paraExport, papel, 'relleno') + `</g>`
        + `<g${tr}>`          + cuerpoMandala(lineas, paraExport, papel, 'trazo')   + `</g>`;
@@ -3640,6 +3694,16 @@ function svgMarkup(op){
     const rect = estado.fondoColor || fondo;
     if (rect) s += `<rect class="parte" data-i="-1" x="${-M}" y="${-M}" `
                  + `width="${M*2}" height="${M*2}" fill="${rect}"/>`;
+    // Al colorear, encima del fondo van las celdas: cada hueco es su propia
+    // zona. Sin pintar son transparentes —invisibles pero sí sensibles al
+    // toque, porque `transparent` es un color y no `none`—.
+    if (lineas || estado.enBlanco)
+      celdasFondo().forEach((d, n) => {
+        const c = estado.piezas['-1:' + n];
+        if (!c && px) return;                         // en el archivo no van vacías
+        s += `<path class="parte" data-i="-1" data-j="${n}" d="${d}" `
+           + `fill="${c || 'transparent'}"/>`;
+      });
     // Las figuras conservan el color del PAPEL aunque el fondo esté pintado: en
     // una lámina, pintar alrededor no tiñe lo que aún no se ha coloreado.
     s += pintado(lineas, !!px, lineas ? opaco(fondo) : null, filtro, '');
@@ -3671,17 +3735,35 @@ let LIENZO_M = VB / 2;
    porque el alcance depende de las repeticiones de cada anillo y no se puede
    deducir de los radios. Si cambia, se corrige el viewBox y el rectángulo de
    fondo sobre el SVG ya insertado: no hace falta volver a generar el marcado. */
+let LIENZO_TOKEN = '';
 function ajustarLienzo(){
   if (estado.vista !== 'plano') return;
-  const svg = svgHost.querySelector('svg'), g = svg && svg.querySelector('g');
-  if (!svg || !g) return;
-  let b;
-  try { b = g.getBBox(); } catch { return; }
-  if (!b || !b.width) return;
+  const svg = svgHost.querySelector('svg');
+  if (!svg) return;
+
+  // Se mide UNA vez por mandala. Antes se medía en cada pintado y el dibujo
+  // cambiaba de tamaño al alternar entre color y solo líneas, porque las
+  // sombras cel no se dibujan en la lámina y con ellas la caja daba distinta.
+  const token = estado.semilla + '|' + JSON.stringify(estado.cfg);
+  if (token === LIENZO_TOKEN) return;
+
+  // Las sombras se excluyen de la medida: son cuñas grandes recortadas con la
+  // silueta de su pieza, y `getBBox` no sabe del recorte — devuelve la cuña
+  // entera y agranda la caja por algo que no se ve.
+  let ext = 0;
+  try {
+    svg.querySelectorAll('g.parte:not([data-s])').forEach(g => {
+      const b = g.getBBox();
+      if (!b || !b.width) return;
+      ext = Math.max(ext, Math.abs(b.x), Math.abs(b.y), b.x + b.width, b.y + b.height);
+    });
+  } catch { return; }
+  if (!ext) return;
+  LIENZO_TOKEN = token;
+
   // getBBox ignora el grosor del trazo: se añade un margen para que el contorno
   // exterior no quede cortado justo al borde.
-  const ext = Math.max(Math.abs(b.x), Math.abs(b.y), b.x + b.width, b.y + b.height) + 8;
-  const M = Math.min(VB / 2, Math.max(120, Math.ceil(ext)));
+  const M = Math.min(VB / 2, Math.max(120, Math.ceil(ext + 8)));
   if (Math.abs(M - LIENZO_M) < 2) return;
   LIENZO_M = M;
   svg.setAttribute('viewBox', `${-M} ${-M} ${M*2} ${M*2}`);
@@ -3751,9 +3833,20 @@ function sincronizarControles(){
 }
 
 function regenerar(nuevaSemilla){
-  if (nuevaSemilla !== undefined) estado.semilla = nuevaSemilla;
+  // Semilla nueva = mandala nuevo, y nuevo quiere decir NUEVO: se sueltan el
+  // fondo pintado y el modo lámina. Antes se arrastraban, y salía otro dibujo
+  // con el color de fondo del anterior y todavía sin colorear, que no es lo que
+  // uno pide al tocar "Generar nuevo".
+  // Mover los deslizadores NO cuenta: ahí se está ajustando el mismo dibujo.
+  if (nuevaSemilla !== undefined){
+    estado.semilla = nuevaSemilla;
+    estado.fondoColor = null;
+    estado.enBlanco = false;
+    estado.piezas = {};
+  }
   mandala = generar(estado.semilla, estado.cfg);
   colorearInicial();
+  if (nuevaSemilla !== undefined) marcarBlanco();
   pintar(nuevaSemilla !== undefined);
 }
 
@@ -3832,11 +3925,15 @@ PALETAS.forEach((p, i) => {
   el.innerHTML = p.c.map(c => `<i style="background:${c}"></i>`).join('');
   el.onclick = () => {
     if (i >= limites().paletas){ avisar('Paleta Pro'); return; }
-    // En lámina en blanco, elegir paleta solo cambia los colores disponibles
-    // para pintar; no repinta la mandala ni borra lo que ya lleva hecho.
-    estado.paleta = i; if (!estado.enBlanco) autoColorear();
+    // Elegir una paleta PINTA, siempre. Antes, estando en lámina, solo cambiaba
+    // los colores disponibles para no borrar lo hecho a mano — pero tocar una
+    // paleta y que no pase nada se lee como que la app no responde. Si había
+    // algo pintado, deshacer lo devuelve.
+    estado.paleta = i;
+    estado.enBlanco = false; estado.fondoColor = null;
+    autoColorear();
     colorActivo = p.c[2];
-    sincronizarControles(); pintar(false); empujar();
+    sincronizarControles(); marcarBlanco(); pintar(false); empujar();
   };
   $('paletas').appendChild(el);
 });
@@ -4116,8 +4213,8 @@ function aplicarColor(i, j){
     // de una lámina, y con el anillo entero un solo toque pintaba 40 figuras.
     estado.pincel = 'figura';
     marcar('#pinceles', 'pincel', 'figura');
-    // El primer toque puede caer en el fondo, no en una figura.
-    if (i < 0) estado.fondoColor = colorActivo;
+    // El primer toque puede caer en un hueco del fondo, no en una figura.
+    if (i < 0){ if (j != null) estado.piezas['-1:' + j] = colorActivo; }
     else if (j != null) estado.piezas[i + ':' + j] = colorActivo;
     else estado.colores[i] = colorActivo;
     pintar(false);
@@ -4126,11 +4223,20 @@ function aplicarColor(i, j){
     aplicarColor._t = setTimeout(empujar, 400);
     return;
   }
-  // El fondo es una capa más: pintar los espacios en blanco entre figuras.
+  // Los huecos entre figuras. Al colorear, cada uno es su propia zona; fuera de
+  // la lámina, el fondo entero de un toque.
   if (i < 0){
-    if (estado.fondoColor === colorActivo) return;
-    estado.fondoColor = colorActivo;
-    pintar(false);
+    if (estado.enBlanco && j != null){
+      const clave = '-1:' + j;
+      if (estado.piezas[clave] === colorActivo) return;
+      estado.piezas[clave] = colorActivo;
+      const el = svgHost.querySelector(`.parte[data-i="-1"][data-j="${j}"]`);
+      if (el) el.setAttribute('fill', colorActivo);
+    } else {
+      if (estado.fondoColor === colorActivo) return;
+      estado.fondoColor = colorActivo;
+      pintar(false);
+    }
     if (navigator.vibrate) navigator.vibrate(10);
     clearTimeout(aplicarColor._t);
     aplicarColor._t = setTimeout(empujar, 400);

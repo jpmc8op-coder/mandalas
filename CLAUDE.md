@@ -656,7 +656,12 @@ entrar en esa guarda.
 ### El lienzo se ajusta al dibujo (`ajustarLienzo()`)
 
 En vista plana el `viewBox` no es 1000 fijo: se mide la caja real del dibujo
-después de pintarlo y se recorta a eso más 8 de margen. En un teléfono de 375 px
+después de pintarlo y se recorta a eso más 8 de margen. **Se mide una sola vez
+por mandala** (`LIENZO_TOKEN`) y **excluyendo las sombras** (`g.parte[data-s]`):
+son cuñas grandes recortadas con la silueta de su pieza, y `getBBox()` no sabe
+del recorte — devuelve la cuña entera. Como las sombras no se dibujan en la
+lámina, medir en cada pintado hacía que **el mandala cambiara de tamaño al
+alternar entre color y solo líneas**. En un teléfono de 375 px
 el mandala pasó de **325 a 376 px de diámetro (+16% de lado, +34% de área)**, sin
 tocar la interfaz.
 
@@ -767,6 +772,26 @@ colorear un mandala, así que no se quita: se elige.
 - Entrar a la lámina en blanco o a la página para colorear cambia el pincel a
   **figura** solo: es lo que se espera al colorear a mano.
 
+**La lámina siempre lleva contorno** (`laminar = lineas || enBlanco`). Al dar el
+primer color se salía del modo línea y el dibujo pasaba a pintarse solo con
+rellenos: las figuras que no tienen una capa de contorno propia se quedaban sin
+borde y **dejaba de verse qué faltaba por pintar**. Ahora la lámina en blanco se
+dibuja como el modo línea —tinta en todos los contornos, `paint-order` para
+fundir los subtrazados— pero con el color de cada figura en vez del papel. De
+paso, colorear y "solo líneas" se ven igual, que es lo que uno espera al
+alternar.
+
+**Los huecos son zonas sueltas, no un único fondo** (`celdasFondo()`). Antes,
+tocar un hueco pintaba TODO el fondo de golpe. No se pueden recortar los huecos
+de verdad —son el negativo del dibujo, y eso pide operaciones booleanas sobre
+trazados que el navegador no trae—, así que el fondo se cubre con una retícula
+de sectores de corona **que sigue la estructura del propio mandala**: los cortes
+salen de los radios de sus anillos y los sectores, de su simetría. Cada celda se
+pinta sola, va detrás del dibujo (las figuras ganan el toque donde se superponen)
+y solo se ve en los huecos reales, porque las figuras sin pintar son opacas.
+Sin pintar son `transparent`, que es color y no `none`: invisibles pero sí
+sensibles al toque. Al exportar, las vacías no se emiten.
+
 **El fondo también se pinta.** El rectángulo de fondo se emite con
 `class="parte" data-i="-1"`, así que el mismo toque que pinta una figura lo
 pinta a él (`estado.fondoColor`). Es lo que permite colorear los espacios en
@@ -783,14 +808,22 @@ automático.** Antes, dar el primer color en la página para colorear sacaba del
 modo línea y aparecían de golpe todos los demás colores, como si la app hubiera
 pintado sola el resto. Justo lo contrario de lo que uno espera coloreando.
 
+**"Generar nuevo" sale limpio.** Una semilla nueva suelta el fondo pintado, las
+figuras pintadas a mano y el modo lámina. Antes se arrastraban y salía otro
+dibujo con el color de fondo del anterior y todavía sin colorear — no es lo que
+uno pide al tocar ese botón. Mover los deslizadores **no** cuenta como mandala
+nuevo: ahí se está ajustando el mismo dibujo y el modo se conserva.
+
+**Elegir una paleta pinta, siempre.** Estando en lámina antes solo cambiaba los
+colores disponibles, para no borrar lo hecho a mano; pero tocar una paleta y que
+no pase nada se lee como que la app no responde. Deshacer devuelve lo pintado.
+
 Tres reglas que salieron de usarlo:
 
-- **Queda activado.** Los mandalas que se generen después también nacen sin
-  pintar (`colorearInicial()` es el único punto que decide). Quien entra a
-  pintar quiere pintar varios, no volver a pedirlo cada vez.
-- **Elegir paleta no repinta nada** estando en blanco: solo cambia los colores
-  disponibles. Repintar borraría lo que la persona lleva hecho.
-- **El selector de Contornos tampoco aplica**, por lo mismo.
+- **Se conserva al mover los deslizadores**, no al generar de nuevo: ajustar
+  simetría o anillos es seguir con el mismo dibujo; pedir otro es empezar.
+- **El selector de Contornos no aplica** estando en lámina: ahí los contornos
+  son tinta sobre papel, y recolorear borraría lo que la persona lleva hecho.
 
 `Auto-colorear` apaga el modo y devuelve el coloreado por paleta.
 
@@ -938,6 +971,16 @@ probabilidad de banda vacía **baja** con el Detalle, que es lo que más se nota
 - El toque acierta la copia exacta: `elementFromPoint` sobre el dibujo devuelve
   `data-i` + `data-j`, y sobre un hueco devuelve el fondo (`data-i="-1"`).
 - 2100 combinaciones repetidas con y sin figuras pintadas a mano: SVG válido.
+- La lámina conserva sus contornos al pintar: 14 grupos con trazo en modo línea,
+  los mismos 14 después de dar color a una figura.
+- El lienzo no cambia al alternar color / solo líneas: mismo `viewBox` en los
+  dos (medido en `robot`, que es el estilo que más se acerca al borde).
+- Celdas del fondo: 192 en pantalla en un hindú de simetría 16, pintar dos deja
+  exactamente esas dos con color y el fondo entero sin tocar, y en la
+  exportación solo van las pintadas (1 de 192). Pintar con celdas cuesta 0.4 ms.
+- La zona de toque ampliada de los motivos de línea bajó de 34 unidades fijas a
+  `grosor × 2.2` (mínimo 10): con 34 se comía los toques de las figuras vecinas
+  y no había zoom que valiera.
 - El fondo pintado se toca de verdad: `elementFromPoint` sobre un hueco devuelve
   el rect `data-i="-1"`, y la exportación a PNG sale con ese color (píxel de la
   esquina medido: exactamente el elegido).
