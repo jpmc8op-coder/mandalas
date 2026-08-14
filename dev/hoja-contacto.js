@@ -11,6 +11,23 @@
     g.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#fff;display:grid;'
       + 'grid-template-columns:repeat(' + (P.get('modo')==='motivos'?4:3) + ',1fr);'
       + 'gap:6px;padding:6px;overflow:hidden';
+    if (P.get('modo') === 'siluetas'){
+      // Las siluetas de animales se juzgan aisladas y en negativo: lo único que
+      // importa es si se reconocen de un vistazo a tamaño pequeño.
+      g.style.gridTemplateColumns = 'repeat(' + (P.get('cols') || 4) + ',1fr)';
+      const lista = P.get('m') ? P.get('m').split(',') : Object.keys(SILUETAS);
+      lista.forEach(n => {
+        const d = document.createElement('div');
+        d.style.cssText = 'position:relative;background:#fff';
+        d.innerHTML = '<svg viewBox="-62 -62 124 124" style="width:100%;display:block">'
+          + '<path d="' + SILUETAS[n] + '" fill="#2C3A47"/></svg>'
+          + '<b style="position:absolute;left:6px;bottom:2px;font:12px monospace;color:#777">' + n + '</b>';
+        g.appendChild(d);
+      });
+      document.body.appendChild(g);   // las otras ramas caen al append del final
+      return;
+    }
+
     if (P.get('modo') === 'motivos'){
       P.get('m').split(',').forEach(n => {
         const m = MOTIVOS[n](70, 150, 180/8*0.92, mulberry32(7));

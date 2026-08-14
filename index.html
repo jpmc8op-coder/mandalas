@@ -2042,7 +2042,84 @@ const SILUETAS = {
             M -24,16 C -40,20 -46,34 -38,44 L -30,40 C -34,32 -28,26 -20,26 Z
             M 20,26 C 28,26 34,32 30,40 L 38,44 C 46,34 40,20 24,16 Z
             M -22,-4 L -40,-12 L -42,-3 L -24,4 Z
-            M 24,4 L 42,-3 L 40,-12 L 22,-4 Z`
+            M 24,4 L 42,-3 L 40,-12 L 22,-4 Z`,
+
+  /* Segunda tanda. La primera se cargó de insectos y bichos de mar; estas
+     buscan otras familias —mamífero, reptil, ave zancuda— y sobre todo
+     siluetas que se distingan entre sí de un vistazo, que es lo único que
+     importa a este tamaño. */
+  // Cabeza de ciervo de frente. La primera versión ponía la cornamenta como dos
+  // estrellas sobre dos óvalos y salía un muñeco de nieve: las astas tienen que
+  // RAMIFICARSE, es lo único que hace que se lea "ciervo".
+  ciervo:  `M 0,-10 C 11,-10 18,-1 18,11 C 18,24 10,38 0,46
+            C -10,38 -18,24 -18,11 C -18,-1 -11,-10 0,-10 Z
+            M -17,4 C -28,-2 -39,0 -43,8 C -39,16 -27,17 -16,12 Z
+            M 17,4 C 28,-2 39,0 43,8 C 39,16 27,17 16,12 Z
+            M -8,-9 L -13,-24 L -22,-29 L -19,-34 L -11,-30 L -15,-41
+            L -24,-46 L -21,-51 L -12,-47 L -10,-52 L -5,-38 L -4,-24 L -5,-11 Z
+            M 8,-9 L 13,-24 L 22,-29 L 19,-34 L 11,-30 L 15,-41
+            L 24,-46 L 21,-51 L 12,-47 L 10,-52 L 5,-38 L 4,-24 L 5,-11 Z`,
+  // Cara de zorro: dos orejas en punta y el hocico en cuña. En vez del zorro
+  // sentado de la primera versión, que era una mancha sin lectura posible.
+  zorro:   `M -38,-44 L -31,-6 C -31,-1 -27,4 -21,8 L -3,22 L 0,46 L 3,22
+            L 21,8 C 27,4 31,-1 31,-6 L 38,-44 L 21,-21
+            C 8,-27 -8,-27 -21,-21 Z`,
+  // Murciélago: alas membranosas con los dedos marcados.
+  murcielago: `M 0,-14 C -4,-14 -7,-11 -7,-6 C -7,-2 -5,2 0,4 C 5,2 7,-2 7,-6
+            C 7,-11 4,-14 0,-14 Z
+            M -4,-13 L -8,-24 L -1,-19 Z  M 4,-13 L 8,-24 L 1,-19 Z
+            M -6,-8 C -18,-16 -34,-18 -48,-12 L -40,-4 L -48,0 L -38,6 L -46,12
+            L -32,16 C -22,16 -12,10 -6,2 Z
+            M 6,-8 C 18,-16 34,-18 48,-12 L 40,-4 L 48,0 L 38,6 L 46,12
+            L 32,16 C 22,16 12,10 6,2 Z`,
+  // Caballito de mar: hocico tubular, corona y cola enroscada.
+  caballitoMar: `M 4,-48 C 14,-48 20,-40 20,-30 C 20,-22 16,-16 12,-10
+            C 18,-2 20,10 16,20 C 12,32 2,40 -8,40 C -16,40 -22,34 -22,26
+            C -22,18 -16,12 -8,12 C -2,12 2,16 2,22 C 2,26 0,28 -4,28
+            C -6,28 -8,26 -8,24 L -4,24 C -3,24 -2,23 -2,22 C -2,19 -5,17 -8,17
+            C -13,17 -17,21 -17,26 C -17,31 -13,35 -8,35 C 0,35 8,28 11,18
+            C 14,8 12,-2 6,-8 L -2,-14 C -8,-18 -10,-24 -10,-30
+            C -10,-40 -4,-48 4,-48 Z
+            M 4,-52 L 1,-45 L 7,-45 Z  M 12,-50 L 10,-44 L 16,-46 Z
+            M -12,-34 L -22,-38 L -16,-30 Z`,
+  // Pulpo: cabeza abombada y ocho brazos ondulados.
+  pulpo:   `M 0,-44 C 14,-44 24,-32 24,-18 C 24,-10 22,-4 18,0 L -18,0
+            C -22,-4 -24,-10 -24,-18 C -24,-32 -14,-44 0,-44 Z
+            M -18,0 C -22,10 -30,18 -40,20 C -46,21 -50,18 -48,14
+            C -44,16 -38,12 -34,4 Z
+            M -10,2 C -12,14 -18,26 -28,34 C -34,38 -38,34 -34,30
+            C -26,24 -20,14 -18,2 Z
+            M -2,2 C -3,16 -6,30 -12,42 C -15,48 -21,46 -19,40
+            C -13,30 -10,16 -10,2 Z
+            M 2,2 C 3,16 6,30 12,42 C 15,48 21,46 19,40 C 13,30 10,16 10,2 Z
+            M 10,2 C 12,14 18,26 28,34 C 34,38 38,34 34,30 C 26,24 20,14 18,2 Z
+            M 18,0 C 22,10 30,18 40,20 C 46,21 50,18 48,14 C 44,16 38,12 34,4 Z`,
+  // Serpiente enroscada.
+  serpiente: `M 6,-40 C 26,-40 40,-24 40,-4 C 40,20 22,38 -2,38
+            C -22,38 -38,24 -38,4 C -38,-12 -26,-24 -10,-24
+            C 4,-24 16,-14 16,0 C 16,12 7,21 -4,21 C -13,21 -20,14 -20,5
+            C -20,-2 -14,-8 -7,-8 C -1,-8 4,-3 4,3 L -4,3 C -4,1 -5,0 -7,0
+            C -9,0 -11,2 -11,5 C -11,9 -8,13 -4,13 C 3,13 8,7 8,0
+            C 8,-9 0,-16 -10,-16 C -22,-16 -30,-7 -30,4 C -30,19 -18,30 -2,30
+            C 17,30 32,16 32,-4 C 32,-20 21,-32 6,-32 Z
+            M 6,-44 L 18,-40 L 6,-36 Z`,
+  // Flamenco. La cabeza va en el MISMO trazado que el cuerpo: como subtrazado
+  // suelto se vaciaba y quedaba un aro, con aire de piruleta.
+  flamenco: `M -20,52 L -20,46 L -10,46 C -14,40 -16,32 -14,22
+            C -12,10 -4,2 6,0 C 0,-6 -4,-14 -4,-24 C -4,-36 4,-46 15,-46
+            C 24,-46 31,-40 31,-32 C 31,-27 28,-23 24,-21 L 40,-14 L 24,-9
+            C 21,-6 17,-4 13,-4 C 8,-4 4,-6 1,-9 C -4,-4 -7,4 -6,14
+            C -5,26 0,36 8,44 L 8,52 Z`,
+  // Lagartija: las patas se solapan con el cuerpo. Sueltas, como estaban, se
+  // veían cuatro barritas flotando alrededor de una mancha.
+  lagartija: `M 0,-46 C 8,-46 14,-40 14,-32 C 14,-27 12,-23 8,-20
+            C 14,-14 16,-6 14,2 C 12,12 6,20 6,30 C 6,37 10,43 15,47
+            C 19,50 16,54 12,51 C 2,45 -2,37 -2,28 C -2,16 4,8 6,0
+            C 7,-6 4,-12 -2,-16 C -9,-20 -14,-25 -14,-32 C -14,-40 -8,-46 0,-46 Z
+            M -8,-30 L -28,-40 L -33,-31 L -11,-22 Z
+            M 8,-30 L 28,-40 L 33,-31 L 11,-22 Z
+            M 2,2 L -20,6 L -18,16 L 4,12 Z
+            M 6,10 L 26,18 L 21,27 L 3,20 Z`
 };
 
 /* --- Piezas estructurales del yantra --- */
@@ -2247,9 +2324,19 @@ function generarAnillos(semilla, cfg, voc){
     const m  = MOTIVOS[motivo](r0, r1, hw, rnd);
     const zB = -(r0 + r1) / 2;          // profundidad: más lejos del centro, más al fondo
 
+    // El grosor se limita a lo que da la banda. Era un valor suelto del
+    // vocabulario, sin mirar el tamaño de la figura: en el africano, que usa
+    // trazos gruesos a propósito, un motivo pequeño con 12 de grosor se
+    // rellenaba solo y salían manchas negras. El tope es una fracción del lado
+    // menor de la casilla — el alto de la banda o la cuerda entre repeticiones.
+    const cuerda  = 2 * ((r0 + r1) / 2) * Math.sin(hw * D2R);
+    const casilla = Math.max(Math.min(altoEf, cuerda), 6);
+    const grosorBanda = () =>
+      Math.max(Math.min(entre(rnd, voc.grosor[0], voc.grosor[1]), casilla * 0.17), 1.6);
+
     partes.push({
       d: m.d, k, off: ((i + fase) % 2) ? 180 / k : 0, evenodd: !!m.evenodd, z: zB,
-      trazo: !!m.trazo, grosor: m.trazo ? entre(rnd, voc.grosor[0], voc.grosor[1]) : 0
+      trazo: !!m.trazo, grosor: m.trazo ? grosorBanda() : 0
     });
 
     // Tira de textura pegada al borde interior del anillo. En los tejidos de
@@ -2261,7 +2348,8 @@ function generarAnillos(semilla, cfg, voc){
       const kS = repeticionesParaBanda(N, (ra + rb) / 2, rb - ra, rnd);
       const mS = MOTIVOS[sec](ra, rb, 180 / kS, rnd);
       partes.push({ d: mS.d, k: kS, off: 180 / kS, evenodd: !!mS.evenodd, z: zB,
-                    trazo: !!mS.trazo, grosor: mS.trazo ? entre(rnd, 3, 6) : 0 });
+                    trazo: !!mS.trazo,
+                    grosor: mS.trazo ? Math.min(entre(rnd, 3, 6), (rb - ra) * 0.32) : 0 });
     }
 
     // Adornos que controla el deslizador de Detalle. Sin ellos el deslizador
@@ -2269,8 +2357,7 @@ function generarAnillos(semilla, cfg, voc){
     const offM = ((i + fase) % 2) ? 180 / k : 0;
     if (!m.trazo && dens > 0.32 && altoEf > 30)
       partes.push({ d: MOTIVOS[motivo](r0 + altoEf*0.20, r1 - altoEf*0.18, hw*0.55, rnd).d,
-                    k, off: offM, trazo: true, z: zB,
-                    grosor: entre(rnd, voc.grosor[0], voc.grosor[1]) * 0.45 });
+                    k, off: offM, trazo: true, z: zB, grosor: grosorBanda() * 0.45 });
 
     if (rnd() < dens && altoEf > 40){
       const k2 = repeticionesArmonicas(N, rnd);
@@ -2283,7 +2370,7 @@ function generarAnillos(semilla, cfg, voc){
     // anillo siguiente y el aro se vería fuera de sitio.
     if (rnd() < voc.aros || i === cfg.anillos - 1){
       partes.push({ d: circuloPath(0, 0, r), k: 1, off: 0, trazo: true, z: -r,
-                    grosor: entre(rnd, voc.grosor[0], voc.grosor[1]) * 0.7 });
+                    grosor: grosorBanda() * 0.7 });
     }
   }
   return { semilla, N, partes };
@@ -3108,7 +3195,7 @@ const ESTILOS = {
   africano: { n:'Africano',       pal:'Kente',    gen:(s,c) => generarAnillos(s, c, VOC.africano) },
   circuito: { n:'Circuitos',      pal:'Circuito', gen:generarCircuito },
   natura:   { n:'Naturaleza',     pal:'Escarcha', gen:generarNatura },
-  animal:   { n:'Animales',       pal:'Bosque',   gen:generarAnimales },
+  animal:   { n:'Animales',       pal:'Fauna',    gen:generarAnimales },
   robot:    { n:'Robots · Mecha', pal:'Casco',    gen:generarRobot }
 };
 
@@ -3154,7 +3241,15 @@ const PALETAS = [
   { n:'Alerta',    c:['#12171C','#2C3945','#5C7180','#D4342A','#E3E9EC'] },
   // Africanas: mostaza, granate y verde del kente; ocres del adinkra.
   { n:'Kente',     c:['#1A1008','#136F63','#C1121F','#E5B80B','#F2E8C9'] },
-  { n:'Adinkra',   c:['#141210','#4A3728','#9C6B30','#D9A441','#EDE0C8'] }
+  { n:'Adinkra',   c:['#141210','#4A3728','#9C6B30','#D9A441','#EDE0C8'] },
+  /* Paletas de SIETE colores. El coloreado automático reparte los de en medio
+     (`pal.length - 2`), así que una paleta de cinco solo da TRES colores de
+     relleno: por eso el estilo de animales se veía todo verde. Con siete son
+     cinco, y el mandala deja de repetirse tan rápido. El primero sigue siendo
+     el contorno y el último, el papel. */
+  { n:'Fauna',     c:['#241A12','#C1502E','#E0A030','#2E9E8F','#E4655C','#6B8F3A','#F5EAD8'] },
+  { n:'Selva',     c:['#12301F','#1E6B3A','#5FA83C','#C9A227','#2E8B9E','#D96A3A','#F2ECD9'] },
+  { n:'Plumaje',   c:['#161226','#2F3E9E','#3E8FD0','#6BC5B5','#E86A5E','#F2B33D','#F4EFE6'] }
 ];
 const iPaleta = nombre => Math.max(0, PALETAS.findIndex(p => p.n === nombre));
 
@@ -3347,7 +3442,12 @@ const GRADIENTE_ORO =
 
 // Color sólido del fondo/material. null = transparente.
 function colorFondo(){
-  if (estado.fondo === 'paleta') return PALETAS[estado.paleta].c[4];
+  // El papel es SIEMPRE el último color de la paleta, no el quinto: hay paletas
+  // de siete para que el coloreado automático tenga más variedad.
+  if (estado.fondo === 'paleta'){
+    const c = PALETAS[estado.paleta].c;
+    return c[c.length - 1];
+  }
   const f = FONDOS.find(x => x.id === estado.fondo);
   return f ? f.color : '#ffffff';
 }

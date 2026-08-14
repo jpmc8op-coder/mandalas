@@ -493,10 +493,21 @@ Muchos de estos motivos usan `fill-rule="evenodd"` para vaciar el interior
 (damero de la etiqueta, tornillos de la brida, rayo del diamante, cubo del
 engranaje). Es lo que les da lectura de pieza real y no de mancha.
 
+### Paletas de siete colores
+
+`autoColorear()` reparte los colores **de en medio** de la paleta
+(`pal.length - 2`): con las de cinco eso son **tres** rellenos, y por eso el
+estilo de animales salía todo verde. Las paletas `Fauna`, `Selva` y `Plumaje`
+tienen siete —cinco rellenos— y el mandala deja de repetirse tan rápido.
+
+El primer color sigue siendo el contorno y **el último, el papel**: `colorFondo()`
+usa `c[c.length - 1]`, no `c[4]`, que es lo que había y con siete colores habría
+tomado uno del medio como fondo.
+
 ### Estilo `animal` — el límite de lo procedural
 
 **Las siluetas no son procedurales y no pueden serlo.** No hay regla geométrica
-que produzca una mariposa reconocible. `SILUETAS` es una biblioteca curada de 24
+que produzca una mariposa reconocible. `SILUETAS` es una biblioteca curada de 32
 figuras dibujadas a mano, cada una mirando hacia arriba en una caja de ±52
 unidades. Lo procedural es cómo se eligen, se escalan y se distribuyen por los
 anillos. Añadir un animal = añadir una entrada al objeto.
@@ -504,9 +515,12 @@ anillos. Añadir un animal = añadir una entrada al objeto.
 - **Insectos:** mariposa, libélula, abeja (rayas huecas), escarabajo (seis patas
   y línea de élitros), araña (ocho patas), mariquita (cuatro puntos huecos).
 - **Aves:** ave (vista desde arriba), búho (ojos huecos), golondrina (cola
-  ahorquillada), colibrí (pico largo), y pluma de pavo real con el ojo hueco.
-- **Marinos:** pez, delfín, ballena, medusa, cangrejo, estrella de mar, concha.
-- **Otros:** tortuga, gato, huella, conejo, elefante, rana.
+  ahorquillada), colibrí (pico largo), flamenco (cuello en S y una pata), y
+  pluma de pavo real con el ojo hueco.
+- **Marinos:** pez, delfín, ballena, medusa, cangrejo, estrella de mar, concha,
+  pulpo (ocho brazos ondulados), caballito de mar.
+- **Otros:** tortuga, gato, huella, conejo, elefante, rana, ciervo (cabeza con
+  cornamenta), zorro (cara), murciélago, serpiente enroscada, lagartija.
 
 **Al dibujar una silueta nueva, mirarla aislada antes de darla por buena.**
 Cuatro de las diez últimas no se leían al primer intento y todas fallaban por lo
@@ -515,6 +529,16 @@ hasta que las orejas salieron bien fuera del contorno de la cabeza y la trompa
 se estrechó; la ballena y el delfín parecían un pez cualquiera hasta que el
 cuerpo se estrechó y la cola creció. Una figura se reconoce por lo que sobresale
 de su masa principal, no por su masa principal.
+
+**Y pasó otra vez con la segunda tanda:** el ciervo era dos óvalos con dos
+estrellas encima —un muñeco de nieve— porque la cornamenta no ramificaba, y el
+zorro sentado, una mancha sin lectura. Los dos se rehicieron como CABEZAS, que
+es donde está el rasgo que identifica al animal: astas que se bifurcan, orejas
+en punta y hocico en cuña. El flamenco tenía la cabeza como subtrazado suelto y
+se vaciaba en un aro con aire de piruleta: va en el mismo trazado que el cuerpo.
+La regla que resume las dos tandas: **si la silueta necesita explicación, está
+mal dibujada**. Se comprueban con `dev\hoja.ps1 -q "modo=siluetas"`, que las
+pinta aisladas en negativo.
 
 El generador limita las repeticiones a 12 y exige bandas de más de 44 unidades:
 por debajo de eso la silueta no se lee. Entre silueta y silueta se intercalan
@@ -902,8 +926,14 @@ probabilidad de banda vacía **baja** con el Detalle, que es lo que más se nota
 
 - 1050 combinaciones aleatorias de estilo × simetría (3–64) × anillos (3–14) ×
   detalle: cero geometría inválida en los siete estilos.
-- Inventario: 133 motivos, 21 glifos estarcidos, 24 siluetas, 11 núcleos de
-  yantra, 28 paletas. Máximo 83 piezas en un mandala.
+- Inventario: 133 motivos, 21 glifos estarcidos, **32 siluetas**, 11 núcleos de
+  yantra, **31 paletas** (tres de siete colores). Máximo 83 piezas en un mandala.
+- Las 32 siluetas salen todas al generar 400 mandalas de animales, y ninguna de
+  las nuevas se sale de la caja de ±52.
+- Grosor del africano: sobre 2810 trazos de 200 mandalas aleatorios, ninguno
+  pasa de 12 y los de las bandas pequeñas quedan limitados a un 17% de su
+  casilla. Antes salía un grosor suelto del vocabulario sin mirar el tamaño de
+  la figura, y los motivos chicos se rellenaban solos: manchas negras.
 - Los 22 motivos nuevos (12 de circuito/HUD, 10 de naturaleza rellena) se
   construyen sin geometría inválida y se comprobaron en 500 mandalas de esos dos
   estilos con simetría 4–64, 3–14 anillos y detalle 0–100: cero fallos.
