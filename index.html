@@ -62,6 +62,34 @@
   @keyframes aparece{from{opacity:0;transform:scale(.965)}to{opacity:1;transform:scale(1)}}
   .parte path{transition:fill .18s ease,stroke .18s ease}
 
+  /* ---------- Sensación de creación ----------
+     El mandala aparecía entero de golpe: no había proceso que mirar, y el
+     proceso es justo lo que engancha. Ahora BROTA desde el centro hacia afuera.
+     El retraso de cada anillo viaja en `--d`, calculado con su radio, y el
+     origen de la escala es el centro del lienzo (0,0 del viewBox), que es
+     exactamente el centro del mandala: por eso las piezas salen de ahí. */
+  #svgHost.construye g.parte{animation:brota .42s cubic-bezier(.22,1,.36,1) backwards;
+                             animation-delay:var(--d,0s)}
+  @keyframes brota{from{opacity:0;transform:scale(.45)}to{opacity:1;transform:none}}
+
+  /* Al soltar el color, la figura lo absorbe en vez de cambiar de golpe. No se
+     usa `transform` porque las copias llevan su rotación como atributo y una
+     transformación de CSS la pisaría: la figura saltaría de sitio. */
+  .empapa{animation:empapar .32s ease-out}
+  @keyframes empapar{0%{fill-opacity:.35}60%{fill-opacity:1}100%{fill-opacity:1}}
+
+  /* El giro del caleidoscopio al mover Simetría: la mandala se acomoda en vez
+     de ser reemplazada. Solo mientras dura, para no arrastrar el dedo al hacer
+     zoom o al desplazar. */
+  #lienzo.gira{transition:transform .38s cubic-bezier(.22,1,.36,1)}
+
+  @media (prefers-reduced-motion: reduce){
+    #svgHost.construye g.parte{animation:none}
+    #svgHost.fade{animation:none}
+    #lienzo.gira{transition:none}
+    .empapa{animation:none}
+  }
+
   #zoomInfo{
     position:absolute;top:calc(var(--sa-t) + 10px);left:50%;transform:translateX(-50%);
     background:rgba(0,0,0,.55);color:#fff;font-size:12px;padding:4px 10px;border-radius:999px;
@@ -3674,7 +3702,11 @@ function cuerpoMandala(lineas, paraExport, papel, capa){
     let clipId = '';
     if (p.recorte && !lineas) clipId = 'rc' + (++CLIP_SEQ);
 
-    s += `<g class="parte" data-i="${i}" fill="${relleno}" stroke="${trz}" stroke-width="${gr.toFixed(1)}" `
+    // Retraso de aparición: cuanto más lejos del centro, más tarde. Es lo que
+    // hace que el mandala se vea CRECER en vez de aparecer.
+    const dem = paraExport ? '' : ` style="--d:${(Math.min(-(p.z || 0) / 460, 1) * 0.34).toFixed(3)}s"`;
+
+    s += `<g class="parte" data-i="${i}"${dem} fill="${relleno}" stroke="${trz}" stroke-width="${gr.toFixed(1)}" `
        + (p.evenodd ? `fill-rule="evenodd" ` : '')
        + (unir ? `paint-order="stroke fill" ` : '')
        // La sombra se atenúa con opacidad, no eligiendo un tono más claro: así
@@ -3787,10 +3819,9 @@ function svgMarkup(op){
   if (defs) s += `<defs>${defs}</defs>`;
 
   if (!V){
-    // El fondo es una capa pintable más (`data-i="-1"`): así se pueden pintar
-    // los espacios en blanco que quedan entre las figuras. Ojo, es UNA sola
-    // región: los huecos de un mandala se comunican entre sí, así que se pintan
-    // todos a la vez — no hay hueco por hueco sin rasterizar el dibujo.
+    // El fondo, de una pieza: pintarlo entero de un toque fuera de la lámina.
+    // Al colorear se cubre con las celdas de `celdasFondo()`, que es lo que
+    // convierte cada hueco en una zona propia.
     const rect = estado.fondoColor || fondo;
     if (rect) s += `<rect class="parte" data-i="-1" x="${-M}" y="${-M}" `
                  + `width="${M*2}" height="${M*2}" fill="${rect}"/>`;
@@ -3874,13 +3905,20 @@ function ajustarLienzo(){
   }
 }
 
+/* `conFade`: false = sin nada (retoques de color), true = fundido corto,
+   'construye' = el mandala brota desde el centro. Lo tercero se reserva para
+   cuando aparece un mandala NUEVO, que es el momento que vale la pena mirar;
+   usarlo en cada retoque cansa y hace la app lenta de usar. */
 function pintar(conFade){
   svgHost.innerHTML = svgMarkup();
   ajustarLienzo();
   svgHost.classList.toggle('damero', estado.fondo === 'transparente'
     && !estado.fondoColor && estado.vista === 'plano');
-  if (conFade !== false){
-    svgHost.classList.remove('fade'); void svgHost.offsetWidth; svgHost.classList.add('fade');
+  svgHost.classList.remove('fade', 'construye');
+  if (conFade === 'construye'){
+    void svgHost.offsetWidth; svgHost.classList.add('construye');
+  } else if (conFade !== false){
+    void svgHost.offsetWidth; svgHost.classList.add('fade');
   }
   dibujarCapas();
   iSemilla.value = estado.semilla;
@@ -3932,7 +3970,7 @@ function sincronizarControles(){
   dibujarSwatches();
 }
 
-function regenerar(nuevaSemilla){
+function regenerar(nuevaSemilla, animar){
   // Semilla nueva = mandala nuevo, y nuevo quiere decir NUEVO: se sueltan el
   // fondo pintado y el modo lámina. Antes se arrastraban, y salía otro dibujo
   // con el color de fondo del anterior y todavía sin colorear, que no es lo que
@@ -3947,14 +3985,39 @@ function regenerar(nuevaSemilla){
   mandala = generar(estado.semilla, estado.cfg);
   colorearInicial();
   if (nuevaSemilla !== undefined) marcarBlanco();
-  pintar(nuevaSemilla !== undefined);
+  pintar((nuevaSemilla !== undefined || animar) ? 'construye' : false);
+}
+
+/* Mover Simetría cambia el mandala de golpe y se siente un corte de plano. Con
+   un giro de medio sector, en cambio, parece que se ACOMODA: el ojo lee una
+   rotación continua, como al girar un caleidoscopio, y de paso ese medio sector
+   deja las figuras nuevas donde antes había huecos.
+   La transición se pone y se quita: si quedara siempre, el zoom y el arrastre
+   irían con retraso detrás del dedo. */
+function girarLienzo(grados){
+  // Acotado a una vuelta: si no, arrastrando el deslizador se acumulan miles de
+  // grados y el número deja de decir nada.
+  vista.rot = ((vista.rot || 0) + grados) % 360;
+  lienzo.classList.add('gira');
+  aplicarVista();
+  clearTimeout(girarLienzo._t);
+  girarLienzo._t = setTimeout(() => lienzo.classList.remove('gira'), 420);
 }
 
 [['sSimetria','oSimetria','simetria'],['sAnillos','oAnillos','anillos'],['sDensidad','oDensidad','densidad']]
 .forEach(([sl, ou, key]) => {
   const s = $(sl);
-  s.addEventListener('input', () => { $(ou).value = s.value; estado.cfg[key] = +s.value; regenerar(); });
-  s.addEventListener('change', empujar);
+  s.addEventListener('input', () => {
+    $(ou).value = s.value; estado.cfg[key] = +s.value;
+    regenerar();
+  });
+  s.addEventListener('change', () => {
+    // El giro va al SOLTAR, no en cada paso del arrastre: con una transición de
+    // 380 ms lanzándose veinte veces por segundo, el dibujo persigue al dedo con
+    // retraso y se siente pesado. Al soltar, en cambio, se acomoda de una vez.
+    if (key === 'simetria') girarLienzo(180 / Math.max(estado.cfg.simetria, 3));
+    empujar();
+  });
 });
 
 Object.keys(ESTILOS).forEach(id => {
@@ -3965,7 +4028,9 @@ Object.keys(ESTILOS).forEach(id => {
     if (!limites().estilos.includes(id)){ avisar('Estilo Pro'); return; }
     estado.cfg.estilo = id;
     estado.paleta = iPaleta(ESTILOS[id].pal);   // cada estilo trae su paleta
-    regenerar(); sincronizarControles(); empujar();
+    // Cambiar de estilo es un dibujo nuevo aunque la semilla no cambie: se
+    // anima igual que "Generar nuevo".
+    regenerar(undefined, true); sincronizarControles(); empujar();
   };
   $('estilos').appendChild(b);
 });
@@ -4290,6 +4355,15 @@ document.querySelectorAll('#pinceles button').forEach(b => b.onclick = () => {
   empujar();
 });
 
+// El color entra como si la figura lo absorbiera. Es medio segundo, pero es la
+// diferencia entre "cambió un valor" y "acabo de pintar eso".
+function empapar(el){
+  if (!el) return;
+  el.classList.remove('empapa');
+  void el.getBoundingClientRect();
+  el.classList.add('empapa');
+}
+
 /* Pinta la capa `i`, o solo la copia `j` de esa capa si el pincel está en
    "figura". Un mandala repite cada figura hasta 40 veces alrededor del anillo:
    pintar la capa entera es lo que hace rápido colorear, pero al colorear a mano
@@ -4331,7 +4405,7 @@ function aplicarColor(i, j){
       if (estado.piezas[clave] === colorActivo) return;
       estado.piezas[clave] = colorActivo;
       const el = svgHost.querySelector(`.parte[data-i="-1"][data-j="${j}"]`);
-      if (el) el.setAttribute('fill', colorActivo);
+      if (el){ el.setAttribute('fill', colorActivo); empapar(el); }
     } else {
       if (estado.fondoColor === colorActivo) return;
       estado.fondoColor = colorActivo;
@@ -4351,7 +4425,7 @@ function aplicarColor(i, j){
     if (estado.piezas[clave] === colorActivo) return;
     estado.piezas[clave] = colorActivo;
     const el = svgHost.querySelector(`.parte[data-i="${i}"] [data-j="${j}"]`);
-    if (el) el.setAttribute(atributo, colorActivo);
+    if (el){ el.setAttribute(atributo, colorActivo); empapar(el); }
     if (navigator.vibrate) navigator.vibrate(10);
     clearTimeout(aplicarColor._t);
     aplicarColor._t = setTimeout(empujar, 400);
@@ -4368,7 +4442,7 @@ function aplicarColor(i, j){
     pintar(false);
   } else {
     const g = svgHost.querySelector(`.parte[data-i="${i}"]`);
-    if (g) g.setAttribute(atributo, colorActivo);
+    if (g){ g.setAttribute(atributo, colorActivo); empapar(g); }
   }
   const chip = $('capas').children[i];
   if (chip) chip.style.background = colorActivo;
@@ -4384,12 +4458,13 @@ bRehacer.onclick  = rehacer;
 /* =========================================================================
    10. ZOOM Y PINTADO TÁCTIL
    ========================================================================= */
-let vista = { esc:1, x:0, y:0 };
+let vista = { esc:1, x:0, y:0, rot:0 };
 const punteros = new Map();
 let base = null, movido = 0, tIni = 0;
 
 function aplicarVista(){
-  lienzo.style.transform = `translate(${vista.x}px,${vista.y}px) scale(${vista.esc})`;
+  lienzo.style.transform = `translate(${vista.x}px,${vista.y}px) scale(${vista.esc})`
+                         + (vista.rot ? ` rotate(${vista.rot.toFixed(2)}deg)` : '');
   botonesZoom();
   const z = $('zoomInfo');
   z.textContent = Math.round(vista.esc * 100) + '%';
@@ -4415,7 +4490,13 @@ function botonesZoom(){
 }
 $('bMas').onclick   = () => zoom(1.35);
 $('bMenos').onclick = () => zoom(1 / 1.35);
-$('bZoom').onclick  = () => { vista = { esc:1, x:0, y:0 }; aplicarVista(); };
+// "Ver entera" devuelve también el giro acumulado por el deslizador de simetría.
+$('bZoom').onclick  = () => {
+  vista = { esc:1, x:0, y:0, rot:0 };
+  lienzo.classList.add('gira');
+  aplicarVista();
+  setTimeout(() => lienzo.classList.remove('gira'), 420);
+};
 
 const escenaEl = $('escena');
 

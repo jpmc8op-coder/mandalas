@@ -677,6 +677,35 @@ entrar en esa guarda.
   colorear) que sobre negro u oro (previsualización de estampado).
 - **Sin librerías, sin red, sin fuentes remotas.** Funciona offline.
 
+### Movimiento: que se sienta creación, no cálculo
+
+El mandala aparecía **entero y de golpe**. Da igual lo bueno que sea el
+resultado: si no hay proceso que mirar, no hay nada a lo que engancharse. Tres
+piezas, y ninguna es decorativa:
+
+1. **Brota desde el centro** (`#svgHost.construye`). Cada capa entra con
+   `opacity` y `scale` y un retraso `--d` sacado de su radio: 0 en el centro,
+   0.34 s en el borde. El origen de la escala en un `<g>` de SVG es el `0,0` del
+   viewBox, que aquí es el centro exacto del mandala — por eso las piezas
+   parecen salir de ahí sin necesidad de calcular nada.
+   Se reserva para cuando aparece un mandala **nuevo** (Generar, cambiar de
+   estilo). En cada retoque de color cansa y hace la app lenta de usar; deshacer
+   tampoco anima, porque es una corrección, no una creación.
+2. **Giro de caleidoscopio al soltar Simetría** (`girarLienzo`). Medio sector
+   de giro con transición: el ojo lee una rotación continua en vez de un corte
+   de plano, y ese medio sector deja las figuras nuevas donde antes había
+   huecos. **Al soltar, no durante el arrastre**: una transición de 380 ms
+   relanzada veinte veces por segundo hace que el dibujo persiga al dedo. La
+   clase `gira` se pone y se quita, porque si quedara fija el zoom y el
+   desplazamiento irían con retraso.
+3. **La figura empapa el color** (`.empapa`). Anima `fill-opacity`, **no**
+   `transform`: las copias llevan su rotación como atributo y una transformación
+   de CSS la pisaría — la figura saltaría de sitio al pintarla.
+
+Todo se apaga con `prefers-reduced-motion`. Los retrasos no se emiten al
+exportar. Peor caso medido (hindú, simetría 24, 12 anillos, detalle 100): 2649
+paths en 69 grupos, generar y pintar 15 ms.
+
 ### El lienzo se ajusta al dibujo (`ajustarLienzo()`)
 
 En vista plana el `viewBox` no es 1000 fijo: se mide la caja real del dibujo
@@ -1130,7 +1159,8 @@ bloqueado.
 
 ## Pendiente
 - [x] ~~Galería local con `localStorage`~~ — hecha: 30 entradas de ~530 bytes.
-- [ ] Animación de construcción (los anillos aparecen de dentro hacia afuera).
+- [x] ~~Animación de construcción (los anillos aparecen de dentro hacia
+      afuera)~~ — hecha, ver «Movimiento».
 - [ ] Empaquetar con Capacitor. Android primero: cuenta de desarrollador
       USD 25 pago único vs USD 99/año de Apple.
 
