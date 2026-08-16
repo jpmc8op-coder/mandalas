@@ -11,12 +11,13 @@
 
    Al subir una versión, cambiar VERSION: eso deja obsoleta la caché anterior y
    `activate` la borra. */
-const VERSION = 'mandalas-v14';
+const VERSION = 'mandalas-v15';
 const RECURSOS = [
   './',
   './index.html',
   './manifest.json',
   './icon.svg',
+  './privacidad.html',
   './icon-192.png',
   './icon-512.png',
   './apple-touch-icon.png'

@@ -1101,7 +1101,7 @@ Cuatro fases. Cada una se valida antes de pagar por la siguiente.
 | 1 | Web pública en GitHub Pages (HTTPS gratis) | — | falta la cuenta de GitHub |
 | 2 | Instalable como app (PWA) desde el navegador | — | listo; se comprueba al estar en HTTPS |
 | 3 | APK nativo con Capacitor | — | **hecho** |
-| 4 | Publicación en tiendas | Google USD 25 pago único · Apple USD 99/año + Mac | pendiente |
+| 4 | Publicación en tiendas | Google USD 25 pago único · Apple USD 99/año + Mac | **materiales listos**, falta la cuenta |
 
 **Fase 0 (hecha).** `git init` + primer commit; `sw.js` (red primero para el
 HTML, caché primero para iconos — servir el HTML desde caché enterraría
@@ -1185,6 +1185,36 @@ Lo que ya venía resuelto en el código para este momento: `replaceState` en vez
 `pushState` (el botón atrás del webview), `navigator.share` con respaldo a
 descarga, y `esPro()` en la sección 1 como único punto donde se decide qué está
 bloqueado.
+
+### Fase 4 — materiales de la ficha
+
+Todo lo que Play exige y no cuesta dinero ya está hecho:
+
+- **Política de privacidad**: `privacidad.html`, enlazada desde la pestaña Ver
+  de la app y publicada con el sitio. Dice la verdad y está comprobada contra el
+  código: **cero llamadas de red** (la única URL del archivo es el espacio de
+  nombres de SVG) y tres claves en `localStorage`. El único permiso del
+  manifiesto Android es `INTERNET`, que pone la plantilla de Capacitor aunque la
+  app no lo use — candidato a quitar, pero eso hay que probarlo en un teléfono
+  antes.
+- **Textos de la ficha**: `dev/ficha-play.md` (nombre, descripción corta y
+  larga, categoría, clasificación de contenido y las respuestas del formulario
+  de seguridad de datos).
+- **Gráficos**: `dev/capturas.sh` genera seis capturas de 1080×1920 y el gráfico
+  destacado de 1024×500 en `_capturas/tienda/`. Las capturas salen de la app de
+  verdad, con el estado fijado por URL (`modo=app` del inyector), no de un
+  montaje aparte; el gráfico destacado se compone con mandalas generados por la
+  propia app (`modo=grafico`).
+
+> **Truco de las capturas:** se renderiza a 540×960 con
+> `--force-device-scale-factor=2` para obtener 1080×1920. Por debajo de unos
+> 500 px de ancho, Chrome headless ignora el `--window-size` y devuelve una
+> imagen en blanco; y 540 está por debajo del corte de 860 px de la app, así que
+> sale la interfaz de móvil y no la de escritorio.
+
+Falta, y depende de Juan Pablo: la cuenta de desarrollador (USD 25), la **clave
+de firma** (la contraseña la elige él; se guarda fuera del repo) y decidir qué
+queda gratis y qué se paga, o si sale todo gratis.
 
 ## Pendiente
 - [x] ~~Galería local con `localStorage`~~ — hecha: 30 entradas de ~530 bytes.

@@ -6,6 +6,81 @@
   const nav = (performance.getEntriesByType('navigation')[0] || {}).name || location.href;
   const P = new URLSearchParams(nav.split('?')[1] || '');
   if (!P.get('hoja')) return;
+  // `modo=grafico`: el gráfico destacado de la ficha (1024x500). Se compone con
+  // las mandalas de la propia app, no con un montaje aparte, para que lo que se
+  // anuncia sea exactamente lo que la app dibuja.
+  if (P.get('modo') === 'grafico'){
+    const listo = () => {
+      const mandala1 = (est, sem, pal, n, a, d) => {
+        estado.cfg = { estilo: est, simetria: n, anillos: a, densidad: d };
+        estado.semilla = sem; estado.paleta = iPaleta(pal);
+        estado.vista = 'plano'; estado.fondo = 'transparente'; estado.lineas = false;
+        estado.acabado = 'plano'; estado.enBlanco = false; estado.fondoColor = null;
+        estado.piezas = {};
+        mandala = generar(sem, estado.cfg); autoColorear();
+        return svgMarkup();
+      };
+      const g = document.createElement('div');
+      g.style.cssText = 'position:fixed;inset:0;z-index:99999;width:1024px;height:500px;'
+        + 'background:radial-gradient(120% 150% at 22% 40%,#1e2738,#0f131c 70%);'
+        + 'overflow:hidden;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif';
+      g.innerHTML =
+          '<div style="position:absolute;left:-90px;top:-120px;width:420px;height:420px;opacity:.55">'
+        + mandala1('hindu', 8080, 'Flor', 14, 8, 70) + '</div>'
+        + '<div style="position:absolute;right:-96px;top:172px;width:400px;height:400px;opacity:.5">'
+        + mandala1('robot', 21, 'Escuadrón', 12, 7, 70) + '</div>'
+        + '<div style="position:absolute;left:150px;bottom:-230px;width:300px;height:300px;opacity:.3">'
+        + mandala1('natura', 60606, 'Selva', 10, 6, 55) + '</div>'
+        + '<div style="position:absolute;left:360px;top:118px;width:560px;text-align:center">'
+        + '<div style="font-size:74px;font-weight:800;letter-spacing:-.02em;color:#fff;'
+        + 'text-shadow:0 4px 24px #0009">Mandalas</div>'
+        + '<div style="font-size:27px;color:#f2a65a;font-weight:600;margin-top:10px">'
+        + 'Crea y colorea · sin conexión</div>'
+        + '<div style="font-size:20px;color:#a8b3c7;margin-top:16px;line-height:1.5">'
+        + 'Siete estilos · infinitos diseños<br>Pinta con el dedo, figura por figura</div>'
+        + '</div>';
+      document.body.appendChild(g);
+    };
+    if (document.readyState === 'complete') listo();
+    else window.addEventListener('load', listo);
+    return;
+  }
+
+  // `modo=app`: no dibuja rejilla, solo deja la app en un estado concreto para
+  // fotografiarla. Es lo que se usa para las capturas de la ficha de la tienda.
+  if (P.get('modo') === 'app'){
+    const listo = () => {
+      const num = (k, d) => P.get(k) !== null ? +P.get(k) : d;
+      estado.cfg = { estilo: P.get('e') || 'geo', simetria: num('n', 12),
+                     anillos: num('a', 7), densidad: num('d', 60) };
+      estado.semilla = num('s', 4242);
+      if (P.get('p')) estado.paleta = iPaleta(P.get('p'));
+      estado.vista = P.get('v') || 'plano';
+      estado.fondo = P.get('f') || 'blanco';
+      estado.acabado = P.get('ac') || 'plano';
+      estado.lineas = P.get('l') === '1';
+      estado.enBlanco = P.get('b') === '1';
+      mandala = generar(estado.semilla, estado.cfg);
+      colorearInicial();
+      if (P.get('pinta'))                       // "capa:copia:color,..."
+        P.get('pinta').split(',').forEach(t => {
+          const [i, j, c] = t.split(':');
+          estado.piezas[i + ':' + j] = '#' + c;
+        });
+      if (P.get('fondoc')) estado.fondoColor = '#' + P.get('fondoc');
+      sincronizarControles();
+      pintar(false);
+      const tab = P.get('tab');
+      if (tab) document.querySelector('#tabs button[data-hoja="' + tab + '"]').click();
+      if (P.get('plegado') === '1') document.getElementById('bPlegar').click();
+      if (P.get('gal')) try { localStorage.setItem('mandalas.galeria', P.get('gal')); } catch {}
+      if (typeof dibujarGaleria === 'function') dibujarGaleria();
+    };
+    if (document.readyState === 'complete') listo();
+    else window.addEventListener('load', listo);
+    return;
+  }
+
   const pintaHoja = () => {
     const g = document.createElement('div');
     g.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#fff;display:grid;'

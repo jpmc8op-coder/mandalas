@@ -20,6 +20,7 @@ Get-ChildItem $www -File | Remove-Item -Force
 $archivos = @(
   'index.html',
   'manifest.json',
+  'privacidad.html',
   'icon.svg',
   'icon-192.png',
   'icon-512.png',
