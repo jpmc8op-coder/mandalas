@@ -72,6 +72,18 @@
                              animation-delay:var(--d,0s)}
   @keyframes brota{from{opacity:0;transform:scale(.45)}to{opacity:1;transform:none}}
 
+  /* Onda al tocar: los anillos se estiran y vuelven, uno tras otro de dentro
+     hacia afuera, como al tocar una gelatina. Reaprovecha el mismo retraso
+     `--d` que usa el brote, así que la onda viaja a la velocidad del radio sin
+     calcular nada. El rebote está en la curva (el `1.4` se pasa de largo y
+     vuelve), no en más fotogramas. */
+  #svgHost.onda g.parte{animation:gelatina .5s cubic-bezier(.34,1.4,.5,1);
+                        animation-delay:var(--d,0s)}
+  @keyframes gelatina{
+    0%{transform:none} 34%{transform:scale(1.045)}
+    68%{transform:scale(.988)} 100%{transform:none}
+  }
+
   /* Al soltar el color, la figura lo absorbe en vez de cambiar de golpe. No se
      usa `transform` porque las copias llevan su rotación como atributo y una
      transformación de CSS la pisaría: la figura saltaría de sitio. */
@@ -85,6 +97,7 @@
 
   @media (prefers-reduced-motion: reduce){
     #svgHost.construye g.parte{animation:none}
+    #svgHost.onda g.parte{animation:none}
     #svgHost.fade{animation:none}
     #lienzo.gira{transition:none}
     .empapa{animation:none}
@@ -3315,7 +3328,7 @@ const historial = []; let hPtr = -1;
 function instantanea(){
   return JSON.stringify({ s:estado.semilla, c:estado.cfg, p:estado.paleta, k:estado.colores,
                           f:estado.fondo, v:estado.vista, l:estado.lineas, t:estado.trazos,
-                          a:estado.acabado, b:estado.enBlanco, g:estado.fondoColor,
+                          a:estado.acabado, b:estado.enBlanco, g:estado.fondoColor, cx:colorActivo,
                           n:estado.pincel, q:estado.piezas });
 }
 /* Lo que se está pintando sobrevive a cerrar la app. Se guarda la misma
@@ -3369,6 +3382,11 @@ function aplicarSnap(snap){
   estado.fondoColor = o.g || null;
   estado.pincel = o.n || 'anillo';
   estado.piezas = (o.q && typeof o.q === 'object') ? o.q : {};
+  // El color activo viaja con el resto. Antes no se guardaba: al reabrir la app
+  // volvía SIEMPRE al naranja de la paleta Clásico, sin relación con la paleta
+  // del mandala, y sobre las paletas claras ese naranja pálido se confundía con
+  // el papel — parecía que el primer toque pintaba del color del fondo.
+  colorActivo = o.cx || PALETAS[estado.paleta].c[2];
   mandala = generar(estado.semilla, estado.cfg);
   // Red de seguridad para lo que se restaura de una sesión anterior: si la app
   // se actualizó y ese estilo ahora genera otro número de figuras, los colores
@@ -4028,6 +4046,10 @@ Object.keys(ESTILOS).forEach(id => {
     if (!limites().estilos.includes(id)){ avisar('Estilo Pro'); return; }
     estado.cfg.estilo = id;
     estado.paleta = iPaleta(ESTILOS[id].pal);   // cada estilo trae su paleta
+    // Y el color activo con ella. Si no, se cambiaba de estilo y el pincel
+    // seguía cargado con un color de la paleta anterior, que en la nueva puede
+    // ser casi el del papel.
+    colorActivo = PALETAS[estado.paleta].c[2];
     // Cambiar de estilo es un dibujo nuevo aunque la semilla no cambie: se
     // anima igual que "Generar nuevo".
     regenerar(undefined, true); sincronizarControles(); empujar();
@@ -4355,6 +4377,18 @@ document.querySelectorAll('#pinceles button').forEach(b => b.onclick = () => {
   empujar();
 });
 
+/* La onda del toque. Se dispara en CADA toque sobre el dibujo, pinte o no:
+   es la respuesta física a haber tocado, y lo que hace que el mandala se sienta
+   una cosa y no una imagen. Va sobre los grupos, así que un dedo en cualquier
+   punto mueve todos los anillos en secuencia desde el centro. */
+function onda(){
+  svgHost.classList.remove('onda', 'construye');
+  void svgHost.offsetWidth;                   // reinicia la animación
+  svgHost.classList.add('onda');
+  clearTimeout(onda._t);
+  onda._t = setTimeout(() => svgHost.classList.remove('onda'), 900);
+}
+
 // El color entra como si la figura lo absorbiera. Es medio segundo, pero es la
 // diferencia entre "cambió un valor" y "acabo de pintar eso".
 function empapar(el){
@@ -4543,8 +4577,11 @@ escenaEl.addEventListener('pointerup', e => {
   if (era === 1 && movido < 12 && Date.now() - tIni < 500 && !enControl(e)){
     const el = document.elementFromPoint(e.clientX, e.clientY);
     const g = el && el.closest ? el.closest('.parte') : null;
-    // `data-j` dice QUÉ copia de la capa se tocó, para poder pintar una sola.
-    if (g) aplicarColor(+g.dataset.i, el.dataset && el.dataset.j != null ? +el.dataset.j : null);
+    if (g){
+      onda();                                  // respuesta al toque, pinte o no
+      // `data-j` dice QUÉ copia de la capa se tocó, para poder pintar una sola.
+      aplicarColor(+g.dataset.i, el.dataset && el.dataset.j != null ? +el.dataset.j : null);
+    }
   }
 });
 escenaEl.addEventListener('pointercancel', e => { punteros.delete(e.pointerId); base = null; });
@@ -4626,6 +4663,7 @@ $('bSVG').onclick = () => entregar(svgBlob(), `mandala-${estado.semilla}.svg`);
     estado.semilla = isNaN(q) ? Math.floor(Math.random() * 1e9) : q;
     mandala = generar(estado.semilla, estado.cfg);
     colorearInicial();
+    colorActivo = PALETAS[estado.paleta].c[2];   // el pincel, cargado con su paleta
     sincronizarControles();
     pintar(true);
   }

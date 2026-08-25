@@ -703,6 +703,17 @@ reparto de anillos, no una figura.
 > centro con dos decimales, así que la Y de un aro es `0.00`: buscando `,0 ` a
 > secas no acertaba **ni uno**, y la comprobación pasaba en verde por vacía.
 
+### El color activo es estado, no una variable suelta
+
+`colorActivo` viaja en la instantánea (`cx`) y se recalcula al cambiar de estilo.
+Antes no hacía ninguna de las dos cosas, y daba un síntoma raro de diagnosticar:
+**al reabrir la app, el primer toque pintaba «del color del fondo»**. Lo que
+pasaba es que volvía siempre a `PALETAS[0].c[2]` —el naranja arena de Clásico—
+sin relación con la paleta del mandala restaurado; sobre las paletas claras
+(Fauna, Flor, Escarcha) ese naranja pálido se confunde con el papel. Lo mismo al
+cambiar de estilo: cambiaba la paleta y el pincel se quedaba cargado con un color
+de la anterior.
+
 ### Movimiento: que se sienta creación, no cálculo
 
 El mandala aparecía **entero y de golpe**. Da igual lo bueno que sea el
@@ -723,7 +734,17 @@ piezas, y ninguna es decorativa:
    comparando formas, y que además cambie de orientación obliga a reencuadrar la
    vista en cada paso. El giro quedó solo para "ver entera", que devuelve la
    rotación a cero con transición.
-3. **La figura empapa el color** (`.empapa`). Anima `fill-opacity`, **no**
+3. **Onda al tocar** (`#svgHost.onda`, `onda()`). Un dedo en cualquier punto
+   estira y devuelve los anillos uno tras otro, de dentro hacia afuera, como al
+   tocar una gelatina. Reaprovecha el mismo retraso `--d` del brote, así que la
+   onda viaja a la velocidad del radio sin calcular nada, y el rebote está en la
+   curva (`cubic-bezier(.34,1.4,.5,1)` se pasa de largo y vuelve), no en más
+   fotogramas. Se dispara **pinte o no**: es la respuesta a haber tocado, y es
+   lo que hace que el mandala se sienta una cosa y no una imagen.
+   Medido congelando la animación a 0.26 s: el centro ya va de vuelta (escala
+   0.99) mientras el medio y el borde siguen estirados (1.044 y 1.047), con doce
+   escalas distintas conviviendo — eso es la secuencia, no un parpadeo a la vez.
+4. **La figura empapa el color** (`.empapa`). Anima `fill-opacity`, **no**
    `transform`: las copias llevan su rotación como atributo y una transformación
    de CSS la pisaría — la figura saltaría de sitio al pintarla.
 
@@ -1055,6 +1076,9 @@ probabilidad de banda vacía **baja** con el Detalle, que es lo que más se nota
 - El toque acierta la copia exacta: `elementFromPoint` sobre el dibujo devuelve
   `data-i` + `data-j`, y sobre un hueco devuelve el fondo (`data-i="-1"`).
 - 2100 combinaciones repetidas con y sin figuras pintadas a mano: SVG válido.
+- El color activo sobrevive a cerrar y abrir, y sigue a la paleta al cambiar de
+  estilo. Ida y vuelta por la instantánea idéntica en los 7 estilos con el color
+  activo dentro.
 - La lámina conserva sus contornos al pintar: 14 grupos con trazo en modo línea,
   los mismos 14 después de dar color a una figura.
 - El lienzo no cambia al alternar color / solo líneas: mismo `viewBox` en los
