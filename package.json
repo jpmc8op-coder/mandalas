@@ -6,7 +6,8 @@
   "scripts": {
     "www": "powershell -ExecutionPolicy Bypass -File dev/preparar-www.ps1",
     "sync": "npm run www && npx cap copy && npx cap sync",
-    "android": "npm run sync && npx cap open android"
+    "android": "npm run sync && npx cap open android",
+    "apk": "npm run www && npx cap copy android && cd android && gradlew.bat assembleDebug"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.0",

@@ -19,6 +19,35 @@ empaquetada.
 | `dev/hoja.ps1` + `dev/hoja-contacto.js` | Herramienta de desarrollo: renderiza varias mandalas de golpe y las captura en PNG. No forma parte de la app. |
 | `_capturas/` | Salida de la herramienta anterior. Desechable. |
 
+## Actualizar sin escribir comandos
+
+Doble clic en **`ACTUALIZAR.bat`** (raíz del proyecto). Menú de tres opciones:
+publicar la web, compilar el APK, o las dos. Es el mismo flujo que a mano, pero
+sin poder olvidarse de ningún paso.
+
+Lo que resuelve, y es el olvido clásico de una PWA: **subir el número de
+`VERSION` en `sw.js`**. Sin eso el teléfono sigue sirviendo la copia guardada y
+parece que los cambios no se aplicaron.
+
+Dos detalles que salieron de escribirlo:
+
+- **La versión de la caché solo sube cuando hay cambios de verdad.** Subirla en
+  cada ejecución llenaría el historial de commits que solo cambian un número.
+- **Se mira si hay commits sin subir, no solo cambios sin guardar.** La primera
+  versión solo miraba `git status`, así que con el árbol limpio y un commit
+  pendiente decía «ya está todo subido» y no publicaba nada.
+
+Para automatizarlo o probarlo, acepta parámetros y se salta el menú:
+
+```bash
+powershell -File devctualizar.ps1 -op 2
+```
+
+> **Lo que NO hace:** recarga en vivo. Para desarrollar con el móvil viendo los
+> cambios al instante habría que apuntar `server.url` de Capacitor al PC por
+> wifi (`npx cap run android -l --external`). No está montado porque el ciclo
+> normal aquí es publicar y recargar, no depurar en el teléfono.
+
 ## Cómo probarla
 
 > **Ojo con la caché al desarrollar.** `python -m http.server` manda

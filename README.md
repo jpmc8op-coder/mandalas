@@ -35,6 +35,11 @@ python -m http.server 8777
 
 y abrir `http://localhost:8777`.
 
+## Actualizar
+
+Doble clic en `ACTUALIZAR.bat`: sube la versión de la caché, publica en GitHub
+Pages y compila el APK, según lo que elijas en el menú.
+
 ## Cómo está hecha
 
 Un solo archivo, `index.html`, con HTML + CSS + JavaScript y **cero
