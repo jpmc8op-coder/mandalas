@@ -33,6 +33,11 @@ Dos detalles que salieron de escribirlo:
 
 - **La versión de la caché solo sube cuando hay cambios de verdad.** Subirla en
   cada ejecución llenaría el historial de commits que solo cambian un número.
+- **Lee y escribe `sw.js` como UTF-8 sin BOM, explícitamente.** Con
+  `Get-Content` + `Set-Content -Encoding UTF8`, PowerShell 5.1 lee el archivo
+  como ANSI y lo reescribe como UTF-8: cada acento queda codificado dos veces
+  («versión» → «versiÃ³n») y encima aparece un BOM. Pasó de verdad en la primera
+  publicación con el script, y empeora en cada ejecución.
 - **Se mira si hay commits sin subir, no solo cambios sin guardar.** La primera
   versión solo miraba `git status`, así que con el árbol limpio y un commit
   pendiente decía «ya está todo subido» y no publicaba nada.

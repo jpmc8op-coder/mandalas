@@ -1,15 +1,15 @@
-﻿/* Service worker de Mandalas.
-   Objetivo: que la app abra sin internet y que, aun asÃ­, una versiÃ³n nueva
+/* Service worker de Mandalas.
+   Objetivo: que la app abra sin internet y que, aun así, una versión nueva
    llegue al usuario sin que tenga que borrar datos del navegador.
 
    Por eso hay DOS estrategias, no una:
-   - index.html va por RED PRIMERO, con la cachÃ© como respaldo. Si sirviÃ©ramos
-     el HTML desde cachÃ©, cualquier correcciÃ³n quedarÃ­a enterrada hasta que el
-     usuario reinstalara: toda la app vive en ese Ãºnico archivo.
-   - iconos y manifiesto van por CACHÃ‰ PRIMERO. No cambian y no vale la pena
+   - index.html va por RED PRIMERO, con la caché como respaldo. Si sirviéramos
+     el HTML desde caché, cualquier corrección quedaría enterrada hasta que el
+     usuario reinstalara: toda la app vive en ese único archivo.
+   - iconos y manifiesto van por CACHÉ PRIMERO. No cambian y no vale la pena
      esperar por la red.
 
-   Al subir una versiÃ³n, cambiar VERSION: eso deja obsoleta la cachÃ© anterior y
+   Al subir una versión, cambiar VERSION: eso deja obsoleta la caché anterior y
    `activate` la borra. */
 const VERSION = 'mandalas-v17';
 const RECURSOS = [
@@ -25,7 +25,7 @@ const RECURSOS = [
 
 self.addEventListener('install', e => {
   // addAll falla entero si un recurso falla; se piden de a uno para que un 404
-  // en un icono no deje la app sin cachÃ©.
+  // en un icono no deje la app sin caché.
   e.waitUntil(
     caches.open(VERSION)
       .then(c => Promise.all(RECURSOS.map(r => c.add(r).catch(() => null))))

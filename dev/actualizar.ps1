@@ -63,12 +63,18 @@ if ($web) {
     # La version de la cache solo sube cuando hay cambios de verdad. Subirla en
     # cada ejecucion llenaria el historial de commits que solo cambian un numero.
     if ($hayCambios) {
+      # Leer y escribir con UTF-8 SIN BOM explícito. Con `Get-Content` /
+      # `Set-Content -Encoding UTF8`, PowerShell 5.1 lee el archivo como ANSI y
+      # lo reescribe como UTF-8: cada acento se codifica dos veces («versión» ->
+      # «versiÃ³n») y encima le añade BOM. Pasó de verdad, y empeora en cada
+      # ejecución.
+      $utf8 = [Text.UTF8Encoding]::new($false)
       $swPath = Join-Path $base 'sw.js'
-      $sw = Get-Content $swPath -Raw
+      $sw = [IO.File]::ReadAllText($swPath, $utf8)
       if ($sw -match "const VERSION = 'mandalas-v(\d+)'") {
         $n = [int]$Matches[1] + 1
         $sw = $sw -replace "const VERSION = 'mandalas-v\d+'", "const VERSION = 'mandalas-v$n'"
-        Set-Content $swPath $sw -NoNewline -Encoding UTF8
+        [IO.File]::WriteAllText($swPath, $sw, $utf8)
         Write-Host "  Cache de la web: mandalas-v$($n-1) -> mandalas-v$n" -ForegroundColor Green
       } else {
         Write-Host "  AVISO: no encontre VERSION en sw.js, no lo he tocado." -ForegroundColor Yellow
