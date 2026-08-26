@@ -285,6 +285,22 @@
   input[type=range].slcolor::-webkit-slider-thumb{border:2px solid #fff;box-shadow:0 1px 4px #0008}
   input[type=range].slcolor::-moz-range-thumb{border:2px solid #fff}
 
+  /* Aviso de versión nueva: discreto pero con un botón de verdad, no un toast
+     que se va solo. Enterarse de que hay una versión nueva no sirve de nada si
+     no se puede hacer algo al respecto en el momento. */
+  #nuevaVer{
+    position:fixed;left:50%;top:calc(var(--sa-t) + 10px);transform:translateX(-50%);
+    z-index:70;display:flex;align-items:center;gap:10px;
+    background:#1c212de6;border:1px solid var(--linea);border-radius:999px;
+    padding:7px 8px 7px 16px;font-size:13px;color:var(--txt);
+    backdrop-filter:blur(6px);box-shadow:0 6px 20px #0006;
+  }
+  #nuevaVer[hidden]{display:none}
+  #nuevaVer button{
+    border:0;border-radius:999px;padding:7px 14px;cursor:pointer;
+    background:var(--acento);color:#1a1206;font-weight:700;font-size:13px;
+  }
+
   #aviso{
     position:fixed;left:50%;bottom:calc(var(--sa-b) + 16px);transform:translate(-50%,20px);
     background:#000d;color:#fff;padding:10px 16px;border-radius:999px;font-size:13px;
@@ -423,6 +439,10 @@
     </div>
     <button class="btn sec" id="bImprimir">Página para colorear</button>
 
+    <!-- Solo aparece si el navegador ofrece instalar. Instalada así, la app se
+         actualiza sola; el APK es una copia congelada que hay que reinstalar. -->
+    <button class="btn" id="bInstalar" hidden style="margin-top:8px">Instalar la app</button>
+
     <p class="pista" style="margin-top:18px">
       No recogemos ningún dato: lo que pintas se queda en tu dispositivo.
       <a href="privacidad.html" style="color:var(--acento)">Política de privacidad</a>
@@ -431,6 +451,13 @@
 </div>
 
 <div id="aviso"></div>
+
+<!-- Aviso de versión nueva. Aparece cuando el service worker nuevo toma el
+     control: los archivos ya están, solo falta recargar para verlos. -->
+<div id="nuevaVer" hidden>
+  <span>Hay una versión nueva</span>
+  <button id="bRecargar">Actualizar</button>
+</div>
 
 <!-- Selector de color propio. Antes esto era un <input type="color">, que
      delega en el selector del sistema: en el escritorio es una paleta cómoda,
@@ -3321,7 +3348,11 @@ const estado = {
   piezas: {}           // copias pintadas a mano: "capa:copia" -> color
 };
 let mandala = null;
-let colorActivo = PALETAS[0].c[2];
+/* Sin color hasta que la persona elija uno. Recién abierta la app, un toque
+   sin querer no puede pintar: el pincel está vacío y solo se carga al tocar una
+   muestra, una paleta o el selector. Una vez elegido, viaja en la instantánea,
+   así que al volver sigue el que se estaba usando. */
+let colorActivo = null;
 
 const historial = []; let hPtr = -1;
 
@@ -3386,7 +3417,7 @@ function aplicarSnap(snap){
   // volvía SIEMPRE al naranja de la paleta Clásico, sin relación con la paleta
   // del mandala, y sobre las paletas claras ese naranja pálido se confundía con
   // el papel — parecía que el primer toque pintaba del color del fondo.
-  colorActivo = o.cx || PALETAS[estado.paleta].c[2];
+  colorActivo = o.cx || null;
   mandala = generar(estado.semilla, estado.cfg);
   // Red de seguridad para lo que se restaura de una sesión anterior: si la app
   // se actualizó y ese estilo ahora genera otro número de figuras, los colores
@@ -4049,7 +4080,7 @@ Object.keys(ESTILOS).forEach(id => {
     // Y el color activo con ella. Si no, se cambiaba de estilo y el pincel
     // seguía cargado con un color de la paleta anterior, que en la nueva puede
     // ser casi el del papel.
-    colorActivo = PALETAS[estado.paleta].c[2];
+    if (colorActivo) colorActivo = PALETAS[estado.paleta].c[2];
     // Cambiar de estilo es un dibujo nuevo aunque la semilla no cambie: se
     // anima igual que "Generar nuevo".
     regenerar(undefined, true); sincronizarControles(); empujar();
@@ -4171,7 +4202,7 @@ function dibujarSwatches(){
   cont.innerHTML = '';
   PALETAS[estado.paleta].c.forEach(c => {
     const b = document.createElement('div');
-    b.className = 'sw' + (c.toLowerCase() === colorActivo.toLowerCase() ? ' on' : '');
+    b.className = 'sw' + (colorActivo && c.toLowerCase() === colorActivo.toLowerCase() ? ' on' : '');
     b.style.background = c;
     b.onclick = () => { colorActivo = c; dibujarSwatches(); };
     cont.appendChild(b);
@@ -4180,7 +4211,7 @@ function dibujarSwatches(){
   wrap.id = 'pickerWrap';
   wrap.title = 'Elegir cualquier color';
   const nucleo = document.createElement('i');
-  nucleo.style.background = colorActivo;
+  nucleo.style.background = colorActivo || 'transparent';
   nucleo.textContent = '+';
   wrap.appendChild(nucleo);
   wrap.onclick = abrirColor;
@@ -4259,7 +4290,7 @@ function csPintar(){
 }
 
 function abrirColor(){
-  csHSL = hexHsl(colorActivo);
+  csHSL = hexHsl(colorActivo || PALETAS[estado.paleta].c[2]);
   const rej = $('csTonos');
   if (!rej.childElementCount)
     CS_TONOS.forEach(c => {
@@ -4403,6 +4434,16 @@ function empapar(el){
    pintar la capa entera es lo que hace rápido colorear, pero al colorear a mano
    uno espera que se pinte SOLO lo que tocó — que es justo lo que sorprendía. */
 function aplicarColor(i, j){
+  // Sin pincel cargado no se pinta nada. El toque ya devolvió la onda, así que
+  // la app responde igual; lo que no hace es cambiar el dibujo por un roce.
+  if (!colorActivo){
+    avisar('Elige un color abajo y vuelve a tocar');
+    if (!aplicarColor._guiado){
+      aplicarColor._guiado = true;      // se enseña dónde está, una sola vez
+      document.querySelector('#tabs button[data-hoja="col"]').click();
+    }
+    return;
+  }
   // Pintar estando en "solo líneas" guardaba el color sin mostrar nada: la app
   // parecía rota. Si el usuario pinta, es que quiere ver color — se sale del
   // modo línea solo.
@@ -4663,7 +4704,6 @@ $('bSVG').onclick = () => entregar(svgBlob(), `mandala-${estado.semilla}.svg`);
     estado.semilla = isNaN(q) ? Math.floor(Math.random() * 1e9) : q;
     mandala = generar(estado.semilla, estado.cfg);
     colorearInicial();
-    colorActivo = PALETAS[estado.paleta].c[2];   // el pincel, cargado con su paleta
     sincronizarControles();
     pintar(true);
   }
@@ -4677,9 +4717,58 @@ $('bSVG').onclick = () => entregar(svgBlob(), `mandala-${estado.semilla}.svg`);
   // Service worker: la app abre sin internet. Solo funciona servida por HTTPS
   // (o localhost); con file:// el registro falla y no pasa nada — la app anda
   // igual, simplemente sin caché offline.
-  if ('serviceWorker' in navigator && location.protocol.startsWith('http'))
-    window.addEventListener('load', () =>
-      navigator.serviceWorker.register('sw.js').catch(() => {}));
+  if ('serviceWorker' in navigator && location.protocol.startsWith('http')){
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').then(reg => {
+        // Se busca versión nueva al abrir y cada media hora. Sin esto, el
+        // navegador puede tardar en darse cuenta y la app instalada parece
+        // estancada aunque la web ya esté publicada.
+        reg.update().catch(() => {});
+        setInterval(() => reg.update().catch(() => {}), 30 * 60 * 1000);
+      }).catch(() => {});
+    });
+
+    // El `skipWaiting()` del service worker hace que el nuevo tome el control en
+    // cuanto se instala; entonces salta esto. Los archivos nuevos ya están: solo
+    // falta recargar para verlos, y eso lo decide la persona — recargar sola a
+    // media pintada sería peor que el problema.
+    // Ojo: `controllerchange` también salta la PRIMERA vez, cuando el service
+    // worker se instala y reclama una página que no tenía ninguno. Sin esta
+    // comprobación, a todo el mundo le salía "hay una versión nueva" en su
+    // primera visita, que es lo contrario de lo que dice el cartel.
+    const habiaControlador = !!navigator.serviceWorker.controller;
+    let yaAvisado = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!habiaControlador || yaAvisado) return;
+      yaAvisado = true;
+      $('nuevaVer').hidden = false;
+    });
+    $('bRecargar').onclick = () => location.reload();
+  }
+
+  /* Botón de instalar. Chrome guarda el aviso y solo lo suelta si se lo pides;
+     sin esto hay que saber buscarlo en el menú del navegador.
+     Importa más de lo que parece: instalada así, la app se actualiza sola en
+     cuanto se publica. El APK es una copia congelada y hay que reinstalarlo a
+     mano cada vez. */
+  let instalador = null;
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    instalador = e;
+    $('bInstalar').hidden = false;
+  });
+  $('bInstalar').onclick = async () => {
+    if (!instalador) return;
+    instalador.prompt();
+    await instalador.userChoice;
+    instalador = null;
+    $('bInstalar').hidden = true;
+  };
+  window.addEventListener('appinstalled', () => {
+    instalador = null;
+    $('bInstalar').hidden = true;
+    avisar('Instalada. Se actualizará sola cuando haya novedades.');
+  });
 })();
 </script>
 </body>

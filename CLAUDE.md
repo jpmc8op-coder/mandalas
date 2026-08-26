@@ -732,6 +732,41 @@ reparto de anillos, no una figura.
 > centro con dos decimales, así que la Y de un aro es `0.00`: buscando `,0 ` a
 > secas no acertaba **ni uno**, y la comprobación pasaba en verde por vacía.
 
+### La app instalada se actualiza sola (si es la PWA)
+
+Hay **dos** apps instalables y solo una se actualiza:
+
+| Instalada desde | Se actualiza |
+|---|---|
+| El navegador ("Instalar app" / "Añadir a pantalla de inicio") | **sí**, sola, al abrirla con internet |
+| El APK | **no**: es una copia congelada, hay que reinstalarlo |
+
+Por eso la app trae un botón **Instalar** (`#bInstalar`, pestaña Ver) que
+aparece cuando el navegador ofrece la instalación: Chrome guarda ese aviso y
+solo lo suelta si se lo piden con `beforeinstallprompt`, así que sin el botón
+hay que saber buscarlo en el menú.
+
+Además, al registrar el service worker se llama a `reg.update()` al abrir y cada
+media hora, y cuando el nuevo toma el control aparece un aviso **Hay una versión
+nueva · Actualizar** que recarga. No se recarga sola: hacerlo a media pintada
+sería peor que el problema.
+
+> **Trampa:** `controllerchange` también salta la primera vez que el service
+> worker se instala y reclama una página que no tenía ninguno. Sin comprobar que
+> ya hubiera un controlador, a todo el mundo le salía «hay una versión nueva» en
+> su primera visita.
+
+### El pincel arranca vacío
+
+`colorActivo` empieza en `null` y solo se carga al tocar una muestra, una paleta
+o el selector. Recién abierta la app, un toque sin querer **no pinta**: devuelve
+la onda, avisa «Elige un color abajo y vuelve a tocar» y abre la pestaña Color
+la primera vez. Antes arrancaba con un color por defecto y el primer roce
+cambiaba el dibujo.
+
+Una vez elegido viaja en la instantánea, así que al volver sigue cargado el que
+se estaba usando — ahí sí pintar de inmediato es lo esperado.
+
 ### El color activo es estado, no una variable suelta
 
 `colorActivo` viaja en la instantánea (`cx`) y se recalcula al cambiar de estilo.
