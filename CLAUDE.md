@@ -761,6 +761,31 @@ sería peor que el problema.
 > ya hubiera un controlador, a todo el mundo le salía «hay una versión nueva» en
 > su primera visita.
 
+### Recorrido de bienvenida
+
+Siete pasos, y siete son ya el límite: un tutorial largo se salta entero y
+entonces no enseña nada. Cada paso enfoca una parte y dice para qué sirve; el
+que necesita otra pestaña la abre antes (`hoja` en el paso). Solo aparece la
+primera vez —si hay algo guardado es que la persona ya estuvo aquí— y se puede
+repetir desde **Ver ▸ Cómo se usa**.
+
+**El foco no es un agujero recortado**: es un rectángulo con una sombra de
+9999px que oscurece todo lo de fuera. Sale más barato que una máscara SVG y se
+coloca con dos coordenadas. La tarjeta va debajo del foco si cabe, y si no,
+encima.
+
+**Se coloca dos veces, y no solo dentro de `requestAnimationFrame`.** La hoja
+del panel acaba de cambiar y las medidas todavía no valen, de ahí el segundo
+pase; pero fiarlo todo a `rAF` deja el foco sin colocar donde no se está
+pintando la página.
+
+> Al probarlo, dos falsos fallos seguidos, los dos del entorno y no del código:
+> en una pestaña que no compone fotogramas **ni `requestAnimationFrame` ni las
+> transiciones CSS avanzan**, así que el foco medía siempre su posición inicial.
+> Y la captura del paso 5 salía en el paso 1 porque el arranque de la app lanza
+> el recorrido solo a los 900 ms y lo reiniciaba por detrás. Conviene sospechar
+> del banco de pruebas antes que del código cuando *todo* falla igual.
+
 ### La interfaz: menos formulario, más taller
 
 El panel se veía serio —etiquetas grises en mayúsculas, cajas rectangulares, un

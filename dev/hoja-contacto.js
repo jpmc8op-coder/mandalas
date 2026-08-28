@@ -74,6 +74,12 @@
       if (tab) document.querySelector('#tabs button[data-hoja="' + tab + '"]').click();
       if (P.get('plegado') === '1') document.getElementById('bPlegar').click();
       if (P.get('gal')) try { localStorage.setItem('mandalas.galeria', P.get('gal')); } catch {}
+      // `tour=N` abre el recorrido en el paso N (1..7), para fotografiarlo.
+      if (P.get('tour') && typeof tourAbrir === 'function'){
+        tourAbrir();
+        const n = Math.max(1, Math.min(TOUR.length, +P.get('tour'))) - 1;
+        setTimeout(() => tourIr(n), 60);
+      }
       if (typeof dibujarGaleria === 'function') dibujarGaleria();
     };
     if (document.readyState === 'complete') listo();

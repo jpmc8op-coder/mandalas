@@ -333,6 +333,35 @@
   input[type=range].slcolor::-webkit-slider-thumb{border:2px solid #fff;box-shadow:0 1px 4px #0008}
   input[type=range].slcolor::-moz-range-thumb{border:2px solid #fff}
 
+  /* ---------- Recorrido de bienvenida ----------
+     El foco no es un agujero recortado: es un rectángulo con una sombra
+     gigantesca (`box-shadow` de 9999px) que oscurece todo lo de fuera. Sale más
+     barato que una máscara SVG y se coloca con dos coordenadas. */
+  #tour{position:fixed;inset:0;z-index:80}
+  #tour[hidden]{display:none}
+  #tourBloqueo{position:absolute;inset:0}      /* se traga los toques */
+  #tourFoco{
+    position:absolute;border-radius:14px;pointer-events:none;
+    box-shadow:0 0 0 9999px rgba(6,9,15,.78), 0 0 0 3px var(--acento);
+    transition:top .28s cubic-bezier(.22,1,.36,1),left .28s cubic-bezier(.22,1,.36,1),
+               width .28s cubic-bezier(.22,1,.36,1),height .28s cubic-bezier(.22,1,.36,1);
+  }
+  #tourCard{
+    position:absolute;left:12px;right:12px;max-width:420px;margin:0 auto;
+    background:var(--panel-2);border:1px solid var(--linea);border-radius:16px;
+    padding:14px 15px 12px;box-shadow:0 12px 34px #000a;
+    transition:top .28s cubic-bezier(.22,1,.36,1);
+  }
+  #tourTitulo{margin:0 0 5px;font-size:15px;font-weight:800;color:var(--acento)}
+  #tourTexto{margin:0 0 12px;font-size:14px;line-height:1.45;color:var(--txt)}
+  .tourPie{display:flex;align-items:center;gap:10px}
+  .tourPie span{flex:1;text-align:center;font-size:12px;color:var(--txt-2)}
+  .tourPie button{
+    border:0;border-radius:999px;padding:9px 16px;cursor:pointer;font-weight:700;font-size:13px;
+  }
+  #tourSaltar{background:transparent;color:var(--txt-2)}
+  #tourSig{background:linear-gradient(135deg,var(--acento),#e8894a);color:#1a1206}
+
   /* Aviso de versión nueva: discreto pero con un botón de verdad, no un toast
      que se va solo. Enterarse de que hay una versión nueva no sirve de nada si
      no se puede hacer algo al respecto en el momento. */
@@ -486,6 +515,7 @@
       <button data-lineas="1">Solo líneas</button>
     </div>
     <button class="btn sec" id="bImprimir">Página para colorear</button>
+    <button class="btn sec" id="bComoSeUsa" style="margin-top:8px">Cómo se usa</button>
 
     <!-- Solo aparece si el navegador ofrece instalar. Instalada así, la app se
          actualiza sola; el APK es una copia congelada que hay que reinstalar. -->
@@ -502,6 +532,22 @@
 
 <!-- Aviso de versión nueva. Aparece cuando el service worker nuevo toma el
      control: los archivos ya están, solo falta recargar para verlos. -->
+<!-- Recorrido de bienvenida. Solo la primera vez, y se puede repetir desde
+     Ver ▸ "Cómo se usa". -->
+<div id="tour" hidden>
+  <div id="tourBloqueo"></div>
+  <div id="tourFoco"></div>
+  <div id="tourCard">
+    <p id="tourTitulo"></p>
+    <p id="tourTexto"></p>
+    <div class="tourPie">
+      <button id="tourSaltar">Saltar</button>
+      <span id="tourPaso"></span>
+      <button id="tourSig">Siguiente</button>
+    </div>
+  </div>
+</div>
+
 <div id="nuevaVer" hidden>
   <span>Hay una versión nueva</span>
   <button id="bRecargar">Actualizar</button>
@@ -4757,6 +4803,98 @@ $('bPNG').onclick = () => guardarImagen().catch(() => avisar('No se pudo exporta
 $('bSVG').onclick = () => entregar(svgBlob(), `mandala-${estado.semilla}.svg`);
 
 /* =========================================================================
+   11 bis. RECORRIDO DE BIENVENIDA
+   Siete pasos, y siete son ya el límite: un tutorial largo se salta entero y
+   entonces no enseña nada. Cada paso enfoca una parte de la interfaz y dice
+   para qué sirve; el que necesita otra pestaña la abre antes.
+   ========================================================================= */
+const TOUR = [
+  { sel:'#escena', titulo:'Este es tu mandala',
+    texto:'Se dibuja solo, con una fórmula. Cada vez que generas sale uno distinto que no ha existido nunca.' },
+  { sel:'#estilos', hoja:'gen', titulo:'Siete estilos',
+    texto:'Cada ficha te muestra un ejemplo. Tócala y el mandala se rehace en ese estilo.' },
+  { sel:'#sSimetria', hoja:'gen', titulo:'Tres mandos',
+    texto:'Simetría es cuántas veces se repite cada figura, anillos son las coronas y detalle es cuánto adorno lleva.',
+    caja:(r)=>({ x:r.x, y:r.y - 6, w:r.width, h:r.height*3 + 44 }) },
+  { sel:'#bGenerar', hoja:'gen', titulo:'Otro distinto',
+    texto:'Cuando no te guste, pide otro. El número de abajo es su semilla: guárdalo y ese mandala vuelve igual.' },
+  { sel:'#swatches', hoja:'col', titulo:'Elige un color y toca',
+    texto:'Toma un color de aquí y toca una figura del dibujo. El botón del arcoíris abre todos los colores.' },
+  { sel:'#pinceles', hoja:'col', titulo:'Un toque o todo el anillo',
+    texto:'Puedes pintar la figura que tocas, o las que se repiten con ella alrededor del anillo, que va mucho más rápido.' },
+  { sel:'#bImprimir', hoja:'ver', titulo:'Para colorear a mano',
+    texto:'Deja el mandala en blanco y negro, listo para pintarlo tú, en la pantalla o impreso en papel.' }
+];
+
+let tourPaso = 0;
+
+function tourColocar(){
+  const p = TOUR[tourPaso];
+  const el = document.querySelector(p.sel);
+  if (!el) return tourSiguiente();
+
+  const r = el.getBoundingClientRect();
+  const c = p.caja ? p.caja(r) : { x:r.x, y:r.y, w:r.width, h:r.height };
+  const m = 8;                                    // aire alrededor del foco
+  const foco = $('tourFoco'), card = $('tourCard');
+  foco.style.left   = Math.max(2, c.x - m) + 'px';
+  foco.style.top    = Math.max(2, c.y - m) + 'px';
+  foco.style.width  = Math.min(innerWidth - 4, c.w + m*2) + 'px';
+  foco.style.height = c.h + m*2 + 'px';
+
+  $('tourTitulo').textContent = p.titulo;
+  $('tourTexto').textContent  = p.texto;
+  $('tourPaso').textContent   = (tourPaso + 1) + ' de ' + TOUR.length;
+  $('tourSig').textContent    = tourPaso === TOUR.length - 1 ? 'Empezar' : 'Siguiente';
+
+  // La tarjeta va donde quepa: debajo del foco si hay sitio, si no encima.
+  const alto = card.offsetHeight || 150;
+  const debajo = c.y + c.h + m + 12;
+  card.style.top = (debajo + alto < innerHeight - 8 ? debajo
+                                                    : Math.max(8, c.y - m - alto - 12)) + 'px';
+}
+
+function tourIr(n){
+  tourPaso = n;
+  const p = TOUR[tourPaso];
+  if (p.hoja){
+    $('panel').classList.remove('plegado');
+    document.querySelector(`#tabs button[data-hoja="${p.hoja}"]`).click();
+  }
+  const el = document.querySelector(p.sel);
+  // Si el objetivo está dentro del panel, que se vea antes de enfocarlo.
+  if (el && el.closest('.hoja')) el.scrollIntoView({ block:'nearest' });
+  // Se coloca ya, y otra vez tras un par de fotogramas: la hoja acaba de
+  // cambiar y las medidas todavía no valen. La primera pasada evita que el foco
+  // se quede sin colocar donde `requestAnimationFrame` no corre (por ejemplo en
+  // una pestaña que no se está pintando).
+  tourColocar();
+  requestAnimationFrame(() => requestAnimationFrame(tourColocar));
+}
+
+function tourSiguiente(){
+  if (tourPaso + 1 >= TOUR.length) return tourCerrar();
+  tourIr(tourPaso + 1);
+}
+
+function tourCerrar(){
+  $('tour').hidden = true;
+  try { localStorage.setItem('mandalas.tour', '1'); } catch {}
+  window.removeEventListener('resize', tourColocar);
+}
+
+function tourAbrir(){
+  $('tour').hidden = false;
+  window.addEventListener('resize', tourColocar);
+  tourIr(0);
+}
+
+$('tourSig').onclick = tourSiguiente;
+$('tourSaltar').onclick = tourCerrar;
+$('tourBloqueo').onclick = tourSiguiente;   // tocar fuera también avanza
+$('bComoSeUsa').onclick = tourAbrir;
+
+/* =========================================================================
    12. ARRANQUE
    ========================================================================= */
 (function inicio(){
@@ -4788,6 +4926,13 @@ $('bSVG').onclick = () => entregar(svgBlob(), `mandala-${estado.semilla}.svg`);
   // La galería y las miniaturas de estilo se dibujan después del primer
   // pintado: cuestan y lo que el usuario está esperando ver es su mandala.
   setTimeout(() => { dibujarGaleria(); miniaturasDeEstilo(); }, 0);
+
+  // El recorrido, solo la primera vez de verdad: si hay algo guardado es que ya
+  // estuvo aquí. Se espera un momento para que se vea aparecer el mandala
+  // primero — el tutorial explica algo que ya está en pantalla.
+  let visto = true;
+  try { visto = !!localStorage.getItem('mandalas.tour'); } catch {}
+  if (!visto && !restaurado) setTimeout(tourAbrir, 900);
 
   // Service worker: la app abre sin internet. Solo funciona servida por HTTPS
   // (o localhost); con file:// el registro falla y no pasa nada — la app anda
