@@ -124,37 +124,69 @@
 
   /* ---------- Panel ---------- */
   #panel{background:var(--panel);border-top:1px solid var(--linea);padding-bottom:var(--sa-b);flex:0 0 auto}
-  #tabs{display:flex;gap:4px;padding:8px 10px 0}
+  #tabs{display:flex;gap:6px;padding:9px 10px 9px}
   #tabs button{
-    flex:1;padding:9px 0;border:0;border-radius:10px 10px 0 0;cursor:pointer;
-    background:transparent;color:var(--txt-2);font-size:14px;font-weight:600;
+    flex:1;padding:10px 0;border:0;border-radius:999px;cursor:pointer;
+    background:transparent;color:var(--txt-2);font-size:14px;font-weight:700;
+    transition:background .18s,color .18s,transform .12s;
   }
-  #tabs button.on{background:var(--panel-2);color:var(--txt)}
+  #tabs button:active{transform:scale(.96)}
+  /* La pestaña activa se marca con el acento, no con un rectángulo gris: se ve
+     de un vistazo dónde está uno sin tener que leer. */
+  #tabs button.on{background:linear-gradient(135deg,var(--acento),#e8894a);color:#1a1206}
   /* Plegar el panel: cuando se está pintando, lo que se quiere es el dibujo. Va
      como botón visible en la barra de pestañas, no como gesto oculto. */
   #bPlegar{flex:0 0 auto;width:40px;font-size:13px;color:var(--txt-2)}
   #panel.plegado .hoja{display:none}
   .hoja{display:none;padding:12px 12px 14px;background:var(--panel-2);max-height:42vh;overflow-y:auto}
-  .hoja.on{display:block}
+  .hoja.on{display:block;animation:entraHoja .2s ease-out}
+  @keyframes entraHoja{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
 
   .fila{display:flex;align-items:center;gap:10px;margin-bottom:11px}
-  .fila label{font-size:12px;color:var(--txt-2);width:82px;flex:0 0 auto}
-  .fila output{font-size:12px;color:var(--txt);width:26px;text-align:right;flex:0 0 auto;font-variant-numeric:tabular-nums}
-  input[type=range]{flex:1;-webkit-appearance:none;appearance:none;height:26px;background:transparent;margin:0}
-  input[type=range]::-webkit-slider-runnable-track{height:4px;background:var(--linea);border-radius:2px}
-  input[type=range]::-webkit-slider-thumb{
-    -webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:var(--acento);
-    margin-top:-9px;border:0;cursor:pointer;
+  .fila label{font-size:13px;color:var(--txt);width:78px;flex:0 0 auto;font-weight:600}
+  /* El valor en pastilla, no en un numerito gris pegado al borde: se lee al
+     vuelo mientras se arrastra, que es cuando importa. */
+  .fila output{
+    font-size:12px;font-weight:700;color:var(--acento);min-width:34px;text-align:center;
+    flex:0 0 auto;font-variant-numeric:tabular-nums;
+    background:#2a3244;border-radius:999px;padding:3px 8px;
   }
-  input[type=range]::-moz-range-track{height:4px;background:var(--linea);border-radius:2px}
-  input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:var(--acento);border:0}
+  /* `--p` lo actualiza el JS con el porcentaje recorrido: el tramo hecho va en
+     color y el que falta en gris, como una barra de progreso. Un deslizador
+     todo gris no dice en qué punto del recorrido estás. */
+  input[type=range]{flex:1;-webkit-appearance:none;appearance:none;height:30px;background:transparent;margin:0}
+  input[type=range]::-webkit-slider-runnable-track{
+    height:6px;border-radius:3px;
+    background:linear-gradient(90deg,var(--acento) var(--p,50%),var(--linea) var(--p,50%));
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;width:24px;height:24px;border-radius:50%;background:#fff;
+    margin-top:-9px;border:3px solid var(--acento);cursor:pointer;
+    box-shadow:0 2px 6px #0006;transition:transform .12s;
+  }
+  input[type=range]:active::-webkit-slider-thumb{transform:scale(1.15)}
+  input[type=range]::-moz-range-track{
+    height:6px;border-radius:3px;
+    background:linear-gradient(90deg,var(--acento) var(--p,50%),var(--linea) var(--p,50%));
+  }
+  input[type=range]::-moz-range-thumb{
+    width:24px;height:24px;border-radius:50%;background:#fff;border:3px solid var(--acento);
+  }
 
   .btn{
-    width:100%;padding:13px;border-radius:12px;border:0;cursor:pointer;
-    background:var(--acento);color:#1a1206;font-size:15px;font-weight:700;
+    width:100%;padding:14px;border-radius:999px;border:0;cursor:pointer;
+    background:linear-gradient(135deg,var(--acento),#e8894a);color:#1a1206;
+    font-size:15px;font-weight:800;letter-spacing:.01em;
+    box-shadow:0 4px 14px #f2a65a33;
+    transition:transform .12s,box-shadow .18s,filter .18s;
   }
-  .btn.sec{background:var(--panel);color:var(--txt);border:1px solid var(--linea);font-weight:600}
-  .btn.sec.on{border-color:var(--acento);background:#2c3446}
+  .btn:active{transform:scale(.97);box-shadow:0 2px 8px #f2a65a22}
+  .btn.sec{
+    background:var(--panel);color:var(--txt);border:1px solid var(--linea);
+    font-weight:700;box-shadow:none;
+  }
+  .btn.sec:active{transform:scale(.97)}
+  .btn.sec.on{border-color:var(--acento);background:#2c3446;color:var(--acento)}
   .duo{display:flex;gap:8px}
 
   .semilla{display:flex;gap:8px;align-items:center;margin-bottom:11px}
@@ -163,7 +195,9 @@
     border-radius:10px;padding:10px;font-size:14px;font-variant-numeric:tabular-nums;min-width:0;
   }
 
-  .titulo{font-size:11px;color:var(--txt-2);text-transform:uppercase;letter-spacing:.07em;margin:0 0 7px}
+  /* Sin mayúsculas ni espaciado de etiqueta de formulario: se lee igual y pesa
+     mucho menos en pantalla. */
+  .titulo{font-size:12px;color:var(--txt-2);font-weight:700;margin:0 0 8px}
   .pista{font-size:11px;color:var(--txt-2);line-height:1.45;margin:8px 0 0}
 
   /* Galería: miniaturas generadas en el momento a partir de la semilla, no
@@ -195,10 +229,24 @@
   .ops::-webkit-scrollbar{display:none}
   .seg.ops{-webkit-mask-image:none;mask-image:none}
   .ops button{
-    flex:0 0 auto;padding:10px 14px;border-radius:10px;border:1px solid var(--linea);cursor:pointer;
-    background:var(--panel);color:var(--txt-2);font-size:13px;white-space:nowrap;
+    flex:0 0 auto;padding:10px 15px;border-radius:999px;border:1px solid var(--linea);cursor:pointer;
+    background:var(--panel);color:var(--txt-2);font-size:13px;white-space:nowrap;font-weight:600;
+    transition:transform .12s,border-color .18s,color .18s,background .18s;
   }
-  .ops button.on{border-color:var(--acento);color:var(--txt);background:#2c3446}
+  .ops button:active{transform:scale(.95)}
+  .ops button.on{border-color:var(--acento);color:var(--acento);background:#2c3446}
+  /* Las fichas de estilo llevan una miniatura del estilo, generada por la
+     propia app. Elegir mirando es más rápido y más claro que leer siete
+     nombres, y de paso se ve de entrada la variedad que hay. */
+  #estilos button{
+    display:flex;flex-direction:column;align-items:center;gap:6px;
+    padding:8px 10px 9px;min-width:74px;
+    /* Radio de tarjeta, no de pastilla: con `999px` heredado de `.ops` una
+       ficha alta sale ovalada. */
+    border-radius:16px;
+  }
+  #estilos svg{width:46px;height:46px;display:block;border-radius:9px;background:#fff}
+  #estilos .nom{font-size:11px;line-height:1.15;max-width:70px;text-align:center}
   .seg{display:flex;gap:7px;margin-bottom:12px}
   .seg button{flex:1}
 
@@ -4013,8 +4061,18 @@ function marcar(cont, attr, valor){
     b.classList.toggle('on', b.dataset[attr] === String(valor)));
 }
 
+/* Tramo recorrido del deslizador. Va como porcentaje en `--p`, que la barra usa
+   para pintar en color lo hecho y en gris lo que falta. Hay que llamarlo también
+   al sincronizar: si no, al deshacer o al abrir un guardado la barra se queda
+   con el color del valor anterior. */
+function pintaRecorrido(s){
+  const min = +s.min, max = +s.max;
+  s.style.setProperty('--p', ((+s.value - min) / (max - min) * 100).toFixed(1) + '%');
+}
+
 function sincronizarControles(){
   sSimetria.value = estado.cfg.simetria; oSimetria.value = estado.cfg.simetria;
+  [sSimetria, sAnillos, sDensidad].forEach(pintaRecorrido);
   sAnillos.value  = estado.cfg.anillos;  oAnillos.value  = estado.cfg.anillos;
   sDensidad.value = estado.cfg.densidad; oDensidad.value = estado.cfg.densidad;
   iSemilla.value  = estado.semilla;
@@ -4060,6 +4118,7 @@ function regenerar(nuevaSemilla, animar){
   const s = $(sl);
   s.addEventListener('input', () => {
     $(ou).value = s.value; estado.cfg[key] = +s.value;
+    pintaRecorrido(s);
     regenerar();
   });
   // Mover Simetría NO gira el mandala. Se probó (medio sector al soltar, como
@@ -4072,7 +4131,7 @@ function regenerar(nuevaSemilla, animar){
 Object.keys(ESTILOS).forEach(id => {
   const b = document.createElement('button');
   b.dataset.estilo = id;
-  b.textContent = ESTILOS[id].n + (limites().estilos.includes(id) ? '' : ' 🔒');
+  b.innerHTML = `<span class="nom">${ESTILOS[id].n}${limites().estilos.includes(id) ? '' : ' 🔒'}</span>`;
   b.onclick = () => {
     if (!limites().estilos.includes(id)){ avisar('Estilo Pro'); return; }
     estado.cfg.estilo = id;
@@ -4368,6 +4427,23 @@ function miniatura(snap){
   estado.piezas = (r.q && typeof r.q === 'object') ? r.q : {};
   mandala = pMandala; LIENZO_M = pLienzo;
   return svg;
+}
+
+/* Cada ficha de estilo lleva un ejemplo de ese estilo, dibujado por la propia
+   app con una semilla fija. Se hace una sola vez, después del primer pintado.
+   Reutiliza `miniatura()`, que presta el estado global y lo devuelve como
+   estaba, así que no hay que inventar un camino de dibujo aparte. */
+function miniaturasDeEstilo(){
+  Object.keys(ESTILOS).forEach(id => {
+    const b = document.querySelector(`#estilos button[data-estilo="${id}"]`);
+    if (!b || b.querySelector('svg')) return;
+    const snap = JSON.stringify({
+      s: 7, c: { estilo:id, simetria:10, anillos:4, densidad:45 },
+      p: iPaleta(ESTILOS[id].pal), k: [], f:'blanco', v:'plano',
+      l:false, t:'tinta', a:'plano', b:false, g:null, n:'anillo', q:{}
+    });
+    try { b.insertAdjacentHTML('afterbegin', miniatura(snap)); } catch {}
+  });
 }
 
 function dibujarGaleria(){
@@ -4709,10 +4785,9 @@ $('bSVG').onclick = () => entregar(svgBlob(), `mandala-${estado.semilla}.svg`);
   }
   botonesZoom();
   empujar(restaurado);
-  // La galería se dibuja después del primer pintado: con el tope de 30 cuesta
-  // ~120 ms, y eso retrasaría la aparición de la mandala, que es lo que el
-  // usuario está esperando ver.
-  setTimeout(dibujarGaleria, 0);
+  // La galería y las miniaturas de estilo se dibujan después del primer
+  // pintado: cuestan y lo que el usuario está esperando ver es su mandala.
+  setTimeout(() => { dibujarGaleria(); miniaturasDeEstilo(); }, 0);
 
   // Service worker: la app abre sin internet. Solo funciona servida por HTTPS
   // (o localhost); con file:// el registro falla y no pasa nada — la app anda

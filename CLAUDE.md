@@ -761,6 +761,31 @@ sería peor que el problema.
 > ya hubiera un controlador, a todo el mundo le salía «hay una versión nueva» en
 > su primera visita.
 
+### La interfaz: menos formulario, más taller
+
+El panel se veía serio —etiquetas grises en mayúsculas, cajas rectangulares, un
+solo color— y eso no invita a jugar. El repaso, por orden de lo que más cambia:
+
+- **Los estilos se eligen viéndolos.** Cada ficha lleva una miniatura de ese
+  estilo, dibujada por la propia app con una semilla fija
+  (`miniaturasDeEstilo()`, reutiliza `miniatura()`). Elegir mirando es más rápido
+  que leer siete nombres, y de entrada se ve la variedad que hay. Cuesta 14.6 ms
+  y se hace **después** del primer pintado, como la galería.
+- **Los deslizadores muestran el recorrido**: el tramo hecho en color, lo que
+  falta en gris (`--p`, que actualiza `pintaRecorrido()`), y el valor en una
+  pastilla del color de acento en vez de un numerito gris pegado al borde. Hay
+  que repintarlo también al sincronizar controles: si no, al deshacer o al abrir
+  un guardado la barra se queda con el color del valor anterior.
+- **Pestaña activa en pastilla de acento**, no un rectángulo gris: se ve dónde
+  está uno sin leer.
+- **Todo responde al toque**: botones y fichas se hunden un poco al pulsarlos
+  (`transform:scale(.96)`), y la hoja del panel entra con un deslizamiento corto.
+- **Formas redondas**: botones y fichas en pastilla; las fichas de estilo con
+  radio de tarjeta, porque con el `999px` heredado de `.ops` una ficha alta sale
+  ovalada.
+- **Títulos sin mayúsculas ni espaciado de etiqueta de formulario.** Se leen
+  igual y pesan mucho menos en pantalla.
+
 ### El pincel arranca vacío
 
 `colorActivo` empieza en `null` y solo se carga al tocar una muestra, una paleta
