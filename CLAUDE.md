@@ -1010,6 +1010,14 @@ y solo se ve en los huecos reales, porque las figuras sin pintar son opacas.
 Sin pintar son `transparent`, que es color y no `none`: invisibles pero sí
 sensibles al toque. Al exportar, las vacías no se emiten.
 
+**Tocar el vacío ya no pinta el fondo entero.** Fuera de la lámina, un toque en
+la zona vacía —que es casi todo el borde de la pantalla— inundaba el fondo de
+color y tapaba el mandala. Un gesto tan fácil de hacer sin querer no puede tener
+una consecuencia tan grande, y encima es difícil de deshacer a ojo. Ahora ahí no
+pasa nada (la primera vez avisa «El fondo se cambia en Ver»). Coloreando sí se
+pinta, pero **hueco por hueco**, que es lo que se pidió y lo que no destruye
+nada.
+
 **El fondo también se pinta.** El rectángulo de fondo se emite con
 `class="parte" data-i="-1"`, así que el mismo toque que pinta una figura lo
 pinta a él (`estado.fondoColor`). Es lo que permite colorear los espacios en

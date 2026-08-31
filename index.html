@@ -4594,20 +4594,25 @@ function aplicarColor(i, j){
     aplicarColor._t = setTimeout(empujar, 400);
     return;
   }
-  // Los huecos entre figuras. Al colorear, cada uno es su propia zona; fuera de
-  // la lámina, el fondo entero de un toque.
+  /* El fondo. Coloreando, cada hueco entre figuras es su propia zona y se pinta
+     solo. Fuera de la lámina NO se pinta nada: antes un toque en el vacío
+     —que es casi todo el borde de la pantalla— inundaba el fondo entero de un
+     color y tapaba el mandala. Un gesto tan fácil de hacer sin querer no puede
+     tener una consecuencia tan grande; el fondo se elige en Ver, donde se ve lo
+     que se está eligiendo. */
   if (i < 0){
-    if (estado.enBlanco && j != null){
-      const clave = '-1:' + j;
-      if (estado.piezas[clave] === colorActivo) return;
-      estado.piezas[clave] = colorActivo;
-      const el = svgHost.querySelector(`.parte[data-i="-1"][data-j="${j}"]`);
-      if (el){ el.setAttribute('fill', colorActivo); empapar(el); }
-    } else {
-      if (estado.fondoColor === colorActivo) return;
-      estado.fondoColor = colorActivo;
-      pintar(false);
+    if (!(estado.enBlanco && j != null)){
+      if (!aplicarColor._avisoFondo){
+        aplicarColor._avisoFondo = true;
+        avisar('El fondo se cambia en Ver');
+      }
+      return;
     }
+    const clave = '-1:' + j;
+    if (estado.piezas[clave] === colorActivo) return;
+    estado.piezas[clave] = colorActivo;
+    const el = svgHost.querySelector(`.parte[data-i="-1"][data-j="${j}"]`);
+    if (el){ el.setAttribute('fill', colorActivo); empapar(el); }
     if (navigator.vibrate) navigator.vibrate(10);
     clearTimeout(aplicarColor._t);
     aplicarColor._t = setTimeout(empujar, 400);
