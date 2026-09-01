@@ -32,7 +32,7 @@ tirar () {   # $1 = nombre   $2 = query
   "$CHROME" --headless=new --disable-gpu --no-sandbox \
     --user-data-dir="/c/Users/jpmc_/AppData/Local/Temp/chr-cap-$RANDOM" \
     --hide-scrollbars --force-device-scale-factor=2 --window-size=540,960 \
-    --virtual-time-budget=9000 \
+    --virtual-time-budget=12000 \
     --screenshot="$WBASE\\_capturas\\tienda\\$1.png" \
     "http://localhost:8777/_hoja.html?hoja=1&modo=app&$2" 2>/dev/null
   for _ in $(seq 1 20); do [ -f "$out" ] && break; sleep 0.3; done
