@@ -101,33 +101,42 @@ galería.
 
 # Subir a Google Play, paso a paso
 
-## 1. Crear la clave de firma (una sola vez)
+La cuenta de desarrollador ya existe: es la misma con la que se está probando
+*Puño de Chatarra*. Una cuenta admite todas las apps que quieras.
 
-La contraseña la eliges tú y **no debe quedar escrita en el repositorio**. En
-PowerShell:
+## 1. La clave de firma
+
+Ya hay un almacén de claves creado para el otro proyecto:
+`C:/Users/jpmc_/claves/puno-de-chatarra.jks` (alias `puno`). **Lo recomendable
+es añadirle una clave propia para esta app** —un archivo puede guardar varias— en
+vez de compartir la misma:
 
 ```bash
-& "C:\Program Files\Eclipse Adoptium\jdk-21.0.12.8-hotspot\bin\keytool.exe" -genkeypair -v -keystore "$env:USERPROFILE\Documents\mandalas-firma.jks" -alias mandalas -keyalg RSA -keysize 2048 -validity 10000
+& "C:\Program Files\Eclipse Adoptium\jdk-21.0.12.8-hotspot\bin\keytool.exe" -genkeypair -v -keystore "C:\Users\jpmc_\claves\puno-de-chatarra.jks" -alias mandalas -keyalg RSA -keysize 2048 -validity 10000
 ```
 
-Pregunta la contraseña dos veces y luego los datos del certificado (nombre,
-ciudad, código de país `CO`). Al final, `¿Es correcto?` → escribir `si`.
+Pide primero la contraseña **del almacén** (la que ya usas para chatarra), luego
+los datos del certificado, y al final una contraseña para esta clave nueva.
 
-**Guardar el `.jks` en dos sitios** (por ejemplo el gestor de contraseñas y un
-disco externo). Con *Play App Signing* —que Google activa solo en las apps
-nuevas— esta es la **clave de subida**: si se pierde, el soporte puede
-reemplazarla, pero es un trámite lento. La clave real la guarda Google.
+*Alternativa sin escribir nada: copiar `android/keystore.properties` del proyecto
+de chatarra a este. Funciona —una clave de subida puede firmar varias apps—, pero
+las dos quedan atadas a la misma.*
 
 ## 2. Decirle al proyecto dónde está
 
-Crear `android/keystore.properties` (ese archivo está fuera de git):
+Crear `android/keystore.properties` (está fuera de git):
 
 ```
-storeFile=C:\Users\jpmc_\Documents\mandalas-firma.jks
-storePassword=LA-QUE-ELEGISTE
+storeFile=C:/Users/jpmc_/claves/puno-de-chatarra.jks
+storePassword=LA-DEL-ALMACEN
 keyAlias=mandalas
-keyPassword=LA-QUE-ELEGISTE
+keyPassword=LA-DE-ESTA-CLAVE
 ```
+
+> **La ruta va con barras normales `/`.** Este archivo usa el formato de
+> propiedades de Java, donde la barra invertida es un carácter de escape: con
+> `C:\Users\...` la ruta llega hecha pedazos (`C:Usersjpmc_...`) y Gradle dice
+> que no encuentra el almacén. Pasó al probarlo.
 
 ## 3. Generar el AAB
 
