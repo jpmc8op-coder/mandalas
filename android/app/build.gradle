@@ -1,5 +1,19 @@
 apply plugin: 'com.android.application'
 
+/* ---------- FIRMA DE PUBLICACION ----------
+   Las contrasenas NO viven aqui: se leen de `android/keystore.properties`, que
+   esta fuera de git. Este archivo si se versiona, asi que cualquier clave
+   escrita aqui acabaria publicada en GitHub.
+
+   Si el archivo no existe, el proyecto sigue compilando en depuracion como
+   siempre: quien clone el repo no necesita la clave para probar la app. */
+def firmaCfg = null
+def firmaFile = rootProject.file("keystore.properties")
+if (firmaFile.exists()) {
+    firmaCfg = new Properties()
+    firmaCfg.load(new FileInputStream(firmaFile))
+}
+
 android {
     namespace = "com.jpmedina.mandalas"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -16,8 +30,21 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        release {
+            if (firmaCfg != null) {
+                storeFile     file(firmaCfg['storeFile'])
+                storePassword firmaCfg['storePassword']
+                keyAlias      firmaCfg['keyAlias']
+                keyPassword   firmaCfg['keyPassword']
+            }
+        }
+    }
     buildTypes {
         release {
+            // Sin el archivo de claves se firma como depuracion, para no romper
+            // la compilacion de quien no la tenga.
+            signingConfig firmaCfg != null ? signingConfigs.release : signingConfigs.debug
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }

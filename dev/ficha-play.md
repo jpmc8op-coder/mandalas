@@ -96,3 +96,65 @@ Están en `_capturas/tienda/` (esa carpeta no se versiona; se regenera con
 Orden sugerido de las capturas, que es un recorrido de la app: mandala hindú →
 coloreando figura por figura → estilo mecha → vista en taza → lámina de líneas →
 galería.
+
+---
+
+# Subir a Google Play, paso a paso
+
+## 1. Crear la clave de firma (una sola vez)
+
+La contraseña la eliges tú y **no debe quedar escrita en el repositorio**. En
+PowerShell:
+
+```bash
+& "C:\Program Files\Eclipse Adoptium\jdk-21.0.12.8-hotspot\bin\keytool.exe" -genkeypair -v -keystore "$env:USERPROFILE\Documents\mandalas-firma.jks" -alias mandalas -keyalg RSA -keysize 2048 -validity 10000
+```
+
+Pregunta la contraseña dos veces y luego los datos del certificado (nombre,
+ciudad, código de país `CO`). Al final, `¿Es correcto?` → escribir `si`.
+
+**Guardar el `.jks` en dos sitios** (por ejemplo el gestor de contraseñas y un
+disco externo). Con *Play App Signing* —que Google activa solo en las apps
+nuevas— esta es la **clave de subida**: si se pierde, el soporte puede
+reemplazarla, pero es un trámite lento. La clave real la guarda Google.
+
+## 2. Decirle al proyecto dónde está
+
+Crear `android/keystore.properties` (ese archivo está fuera de git):
+
+```
+storeFile=C:\Users\jpmc_\Documents\mandalas-firma.jks
+storePassword=LA-QUE-ELEGISTE
+keyAlias=mandalas
+keyPassword=LA-QUE-ELEGISTE
+```
+
+## 3. Generar el AAB
+
+```bash
+npm run aab
+```
+
+Deja `_apk/Mandalas.aab`. Ese es el archivo que sube a Play — el APK de
+depuración **no sirve** para la tienda.
+
+## 4. En Play Console
+
+1. **Crear la app**: nombre `Mandalas: crear y colorear`, español, Aplicación,
+   Gratis. *(Gratis o de pago no se puede cambiar después.)*
+2. **Pruebas internas > Crear versión** y subir el AAB. Empezar por aquí y no
+   por producción: se instala en tu propio teléfono desde la tienda y se ve
+   cómo queda de verdad antes de que lo vea nadie.
+3. **Ficha principal**: pegar los textos de arriba y subir los gráficos de
+   `_capturas/tienda/`.
+4. **Contenido de la app**: política de privacidad, clasificación (cuestionario
+   todo en «no»), seguridad de los datos (no se recoge nada), anuncios: no.
+5. **Producción > Crear versión** cuando la prueba interna esté bien.
+
+La primera revisión de una cuenta nueva tarda entre 3 y 7 días.
+
+## Al publicar una actualización
+
+Subir `versionCode` en `android/app/build.gradle` (2, 3, 4...) — Play rechaza dos
+subidas con el mismo número — y `versionName` si el cambio lo merece. Después
+`npm run aab` y subir el archivo nuevo.

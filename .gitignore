@@ -30,6 +30,7 @@ _apk/
 *.keystore
 *.jks
 key.properties
+android/keystore.properties
 
 # Sistema
 Thumbs.db

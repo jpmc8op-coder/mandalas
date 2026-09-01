@@ -1363,9 +1363,18 @@ Todo lo que Play exige y no cuesta dinero ya está hecho:
 > imagen en blanco; y 540 está por debajo del corte de 860 px de la app, así que
 > sale la interfaz de móvil y no la de escritorio.
 
-Falta, y depende de Juan Pablo: la cuenta de desarrollador (USD 25), la **clave
-de firma** (la contraseña la elige él; se guarda fuera del repo) y decidir qué
-queda gratis y qué se paga, o si sale todo gratis.
+**Firma de publicación montada** (mismo patrón que `puno-de-chatarra`):
+`android/app/build.gradle` lee `android/keystore.properties` —fuera de git— y,
+si no existe, firma en depuración para que el proyecto siga compilando sin la
+clave. `npm run aab` genera el bundle firmado en `_apk/Mandalas.aab` y avisa
+antes si falta el archivo de claves o si alguna contraseña está vacía, que es el
+olvido típico: sin eso Gradle falla con un error que no dice nada.
+
+El paso a paso completo (crear la clave, el archivo de propiedades, el AAB y la
+secuencia en Play Console) está en `dev/ficha-play.md`.
+
+Falta, y depende de Juan Pablo: la cuenta de desarrollador (USD 25), crear su
+**clave de firma** (la contraseña la elige él) y decidir si sale todo gratis.
 
 ## Pendiente
 - [x] ~~Galería local con `localStorage`~~ — hecha: 30 entradas de ~530 bytes.
