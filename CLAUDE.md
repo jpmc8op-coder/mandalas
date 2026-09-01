@@ -1373,6 +1373,15 @@ olvido típico: sin eso Gradle falla con un error que no dice nada.
 El paso a paso completo (crear la clave, el archivo de propiedades, el AAB y la
 secuencia en Play Console) está en `dev/ficha-play.md`.
 
+> **La ruta del almacén en `keystore.properties` va con barras normales.** Es un
+> archivo de propiedades de Java, donde la barra invertida es carácter de escape:
+> con `C:\Users\...` la ruta llega troceada (`C:Usersjpmc_...`) y Gradle dice
+> que no encuentra el almacén. Se descubrió probando el camino entero con una
+> clave desechable, que es justo para lo que servía esa prueba.
+
+**Comprobado de punta a punta** con una clave de usar y tirar, borrada después:
+`bundleRelease` genera un AAB **firmado** de 3,46 MB con la app dentro.
+
 Falta, y depende de Juan Pablo: la cuenta de desarrollador (USD 25), crear su
 **clave de firma** (la contraseña la elige él) y decidir si sale todo gratis.
 
