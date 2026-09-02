@@ -34,28 +34,57 @@ La app no tiene cuentas ni login.
 - Marcar: **No se necesitan datos de inicio de sesión para acceder a mi aplicación**
 - **Guardar**
 
-## A3 · Anuncios
+## A3 · Anuncios ✅ hecho
 
 - ¿Contiene anuncios? → **No, mi aplicación no contiene anuncios**
 - **Guardar**
 
 ## A4 · Clasificación de contenido
 
-1. **Iniciar cuestionario**
-2. Correo de contacto: `jpmc8op@gmail.com`
-3. Categoría: **Utilidades, productividad, comunicación u otro**
-4. El cuestionario entero en **No**: violencia, sangre, contenido sexual,
-   lenguaje soez, drogas, juegos de azar, contenido generado por usuarios,
-   compartir ubicación, compartir información personal, compras digitales.
-5. **Guardar** → **Siguiente** → **Enviar**
+La página se titula **«Clasificaciones del contenido»** y es un asistente de tres
+pasos: **1 Categoría — 2 Cuestionario — 3 Resumen**.
+
+El cuestionario quedó **«Cuestionario incompleto · En curso»**: se empezó y no se
+envió. Para retomarlo se entra por **Editar**, no por «Iniciar nuevo cuestionario».
+
+**Paso 1 · Categoría**
+- Dirección de correo electrónico: `jpmc8op@gmail.com`
+- Categoría — solo hay tres opciones, no la lista larga:
+  - Juego
+  - Social o comunicación
+  - **Todos los demás tipos de aplicaciones** ← esta
+- **Términos y condiciones:** marcar **«Acepto los Términos de Uso tal como los
+  describe la Coalición Internacional de Calificación por Edad (IARC)»**.
+  Sin esa casilla el botón de continuar no se activa: es lo que dejó el
+  cuestionario a medias.
+- **Siguiente**
+
+**Paso 2 · Cuestionario** — todo en **No**.
+
+**Paso 3 · Resumen** — revisar y **Enviar**.
 
 ## A5 · Audiencia objetivo
 
-- Grupos de edad: marcar de **13 a 15**, **16 a 17** y **18 y más**.
-  *(No marcar los grupos de menores de 13: eso mete la app en el programa para
-  niños, con requisitos extra que aquí no hacen falta.)*
-- ¿La app podría atraer a niños de forma no intencionada? → **No**
-- **Guardar**
+Se abre desde el enlace **«Audiencia objetivo»** del panel, pero la página se
+titula **«Contenido y audiencia objetivo»** y es un asistente de cinco pasos:
+**1 Edad objetivo — 2 Detalles de la aplicación — 3 Anuncios —
+4 Presencia en Google Play Store — 5 Resumen**.
+
+**Paso 1 · Edad objetivo.** Casillas: Hasta 5 años · 6-8 · 9-12 · 13-15 · 16-17 ·
+A partir de 18 años. Marcar **13-15**, **16-17** y **A partir de 18 años**.
+
+Las tres primeras salen **bloqueadas**, con este aviso:
+
+> No puedes seleccionar grupos de edad de menos de 13 años porque la
+> clasificación ESRB de tu aplicación es Para mayores de 13 años.
+
+No es un problema ni hay que corregir nada: Google ya impide por sí solo que la
+app entre en el programa para niños.
+
+**Paso 4 · Presencia en Google Play Store** es donde se pregunta si la app podría
+atraer a niños sin querer → **No**.
+
+Al final, **Guardar**.
 
 ## A6 · Seguridad de los datos
 
