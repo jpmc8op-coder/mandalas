@@ -12,6 +12,29 @@ _capturas\tienda\1-hindu.png … 6-galeria.png   capturas de teléfono
 
 ---
 
+# Estado a 2026-09-02
+
+**10 de 11 tareas completadas** en «Termina de configurar tu aplicación».
+
+| Tarea | Estado |
+|---|---|
+| Política de privacidad | ✅ |
+| Datos de inicio de sesión | ✅ |
+| Anuncios | ✅ |
+| **Clasificación de contenido** | ⛔ **pendiente** — falta aceptar los Términos de Uso de la IARC |
+| Audiencia objetivo | ✅ 13-15, 16-17, A partir de 18 años |
+| Seguridad de los datos | ✅ no se recogen datos |
+| Aplicaciones gubernamentales | ✅ No |
+| Funciones financieras | ✅ ninguna |
+| Salud | ✅ ninguna |
+| Categoría y datos de contacto | ✅ Arte y diseño · correo · sitio web |
+| Ficha de Play Store | ✅ textos + icono + gráfico + 6 capturas |
+
+Lo único que falta es aceptar los términos de la IARC y enviar el cuestionario
+de clasificación (paso A4). Después, la prueba interna (parte B).
+
+---
+
 # PARTE A · "Termina de configurar tu aplicación"
 
 En el **Panel de control**, sección *Termina de configurar tu aplicación* →
