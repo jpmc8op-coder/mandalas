@@ -14,14 +14,20 @@ _capturas\tienda\1-hindu.png … 6-galeria.png   capturas de teléfono
 
 # Estado a 2026-09-02
 
-**10 de 11 tareas completadas** en «Termina de configurar tu aplicación».
+**11 de 11 tareas completadas.** La sección «Termina de configurar tu aplicación»
+desapareció del panel: el panel ahora solo muestra Prueba interna, Prueba cerrada
+y Producción.
+
+Clasificación de contenido enviada el 2 de septiembre de 2026 a las 21:19.
+Resultado: ESRB *Para todos* · PEGI 3 · USK *Para todos los públicos* ·
+Google Play *Para mayores de 3 años*, sin descriptores de contenido.
 
 | Tarea | Estado |
 |---|---|
 | Política de privacidad | ✅ |
 | Datos de inicio de sesión | ✅ |
 | Anuncios | ✅ |
-| **Clasificación de contenido** | ⛔ **pendiente** — falta aceptar los Términos de Uso de la IARC |
+| Clasificación de contenido | ✅ enviada, apta para todos |
 | Audiencia objetivo | ✅ 13-15, 16-17, A partir de 18 años |
 | Seguridad de los datos | ✅ no se recogen datos |
 | Aplicaciones gubernamentales | ✅ No |
@@ -30,8 +36,8 @@ _capturas\tienda\1-hindu.png … 6-galeria.png   capturas de teléfono
 | Categoría y datos de contacto | ✅ Arte y diseño · correo · sitio web |
 | Ficha de Play Store | ✅ textos + icono + gráfico + 6 capturas |
 
-Lo único que falta es aceptar los términos de la IARC y enviar el cuestionario
-de clasificación (paso A4). Después, la prueba interna (parte B).
+Lo que sigue: subir el AAB a la prueba interna (parte B) y enviar los cambios a
+revisión desde **Resumen de publicación**.
 
 ---
 
