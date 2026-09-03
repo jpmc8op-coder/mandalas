@@ -36,8 +36,18 @@ Google Play *Para mayores de 3 años*, sin descriptores de contenido.
 | Categoría y datos de contacto | ✅ Arte y diseño · correo · sitio web |
 | Ficha de Play Store | ✅ textos + icono + gráfico + 6 capturas |
 
-Lo que sigue: subir el AAB a la prueba interna (parte B) y enviar los cambios a
-revisión desde **Resumen de publicación**.
+**Prueba interna publicada** el 2026-09-02: versión `1 (1.0)`, canal *Activo*,
+3.18 MB de descarga. Mientras Google no revise la app, los testers la ven con el
+nombre temporal `com.jpmedina.mandalas (unreviewed)`.
+
+**«Enviar aplicación a revisión» está bloqueado.** El Console dice: *«Para enviar
+cambios a revisión, completa los pasos necesarios en el panel de control»*. En
+cuentas personales el desbloqueo pasa por la **prueba cerrada**: publicar una
+versión en ese canal, juntar 12 testers que acepten y mantenerla 14 días. La
+ficha, la clasificación y todo lo demás quedan guardados como cambios pendientes
+hasta entonces.
+
+Lo que sigue: crear la versión de **prueba cerrada** y conseguir los 12 testers.
 
 ---
 
