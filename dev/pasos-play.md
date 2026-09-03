@@ -59,13 +59,28 @@ hasta entonces.
   para reutilizar un bundle hay que usar **Añadir de la biblioteca**, no Subir.
 - Guardada como cambio pendiente, no publicada todavía.
 
-En **Resumen de publicación** aparece **«Enviar 14 cambios a revisión»**, de
-momento en gris: Google corre unas comprobaciones automáticas previas que tardan
-hasta 15 minutos. Cuando terminan, el botón se habilita y ahí sí se envía todo
-—ficha, clasificación, seguridad de datos y la versión de prueba cerrada— a
-revisión.
+## Enviado a revisión · 2026-09-02
 
-Después de eso: que 12 testers acepten y mantengan la app 14 días seguidos.
+Los **14 cambios** —ficha, capturas, clasificación, seguridad de los datos,
+categoría, contacto y la versión de prueba cerrada— se enviaron a Google.
+*Resumen de publicación* ahora dice **«Cambios en revisión»**. Google indica
+hasta 7 días, a veces más.
+
+### La declaración que faltaba
+
+El envío estaba bloqueado por **«Declaración de ID de publicidad incompleta»**:
+toda app orientada a Android 13 o posterior debe decir si usa un ID de
+publicidad. Mandalas no usa ninguno —no hay anuncios, ni analítica, ni una sola
+petición de red— así que se respondió **No** en
+*Contenido de la aplicación ▸ ID de publicidad*.
+
+No aparece en la lista de tareas del panel: solo sale como error al intentar
+enviar a revisión. Si vuelve a pasar en otra app, es ahí.
+
+### Lo que falta
+
+Que **12 testers acepten** la prueba cerrada y la mantengan **14 días seguidos**.
+Recién ahí se habilita *Solicitar acceso a producción*.
 
 ---
 
