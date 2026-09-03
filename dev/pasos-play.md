@@ -50,7 +50,10 @@ hasta entonces.
 **Prueba cerrada creada** el 2026-09-02, canal *Alpha*:
 
 - Países: **177** (todos)
-- Listas de testers: *Pruebas Puño de Chatarra* (2) + *Testers externos* (12)
+- Listas de testers: solo **Pruebas Puño de Chatarra** (2).
+  *Testers externos* (12) se quitó a propósito: son contactos de la otra app y
+  Juan Pablo quiere hablar con ellos antes de sumarlos a esta. Se vuelven a
+  marcar cuando él avise.
 - Versión `1 (1.0)`, añadida desde la biblioteca — el mismo app bundle de la
   prueba interna. Play rechaza subir dos veces el mismo `versionCode`, así que
   para reutilizar un bundle hay que usar **Añadir de la biblioteca**, no Subir.
