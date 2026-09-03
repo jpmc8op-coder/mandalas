@@ -173,12 +173,24 @@ Crea mandalas infinitos y coloréalos con el dedo. Sin conexión y sin anuncios.
 
 En el **Panel de control**, sección *Prueba interna* → **Ver tareas**.
 
-## B1 · Selecciona testers
+## B1 · Selecciona testers ✅ hecho
 
-1. **Crear lista de correos electrónicos**
-2. Nombre de la lista: `Yo`
-3. Añadir `jpmc8op@gmail.com`
-4. **Guardar cambios** y marcar la lista
+La cuenta ya tenía dos listas creadas para *Puño de Chatarra*:
+
+| Lista | Personas |
+|---|---|
+| **Pruebas Puño de Chatarra** | 2 |
+| Testers externos | 11 |
+
+Para la prueba interna quedó marcada **Pruebas Puño de Chatarra**. «Testers
+externos» se deja para la prueba cerrada, que necesita 12 personas.
+
+Enlace para unirse a la prueba interna (funciona cuando haya una versión
+publicada, y solo para los correos de la lista):
+
+```
+https://play.google.com/apps/internaltest/4700608733049926193
+```
 
 ## B2 · Crea un nuevo lanzamiento
 
