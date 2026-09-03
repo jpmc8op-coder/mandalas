@@ -47,7 +47,22 @@ versión en ese canal, juntar 12 testers que acepten y mantenerla 14 días. La
 ficha, la clasificación y todo lo demás quedan guardados como cambios pendientes
 hasta entonces.
 
-Lo que sigue: crear la versión de **prueba cerrada** y conseguir los 12 testers.
+**Prueba cerrada creada** el 2026-09-02, canal *Alpha*:
+
+- Países: **177** (todos)
+- Listas de testers: *Pruebas Puño de Chatarra* (2) + *Testers externos* (12)
+- Versión `1 (1.0)`, añadida desde la biblioteca — el mismo app bundle de la
+  prueba interna. Play rechaza subir dos veces el mismo `versionCode`, así que
+  para reutilizar un bundle hay que usar **Añadir de la biblioteca**, no Subir.
+- Guardada como cambio pendiente, no publicada todavía.
+
+En **Resumen de publicación** aparece **«Enviar 14 cambios a revisión»**, de
+momento en gris: Google corre unas comprobaciones automáticas previas que tardan
+hasta 15 minutos. Cuando terminan, el botón se habilita y ahí sí se envía todo
+—ficha, clasificación, seguridad de datos y la versión de prueba cerrada— a
+revisión.
+
+Después de eso: que 12 testers acepten y mantengan la app 14 días seguidos.
 
 ---
 
