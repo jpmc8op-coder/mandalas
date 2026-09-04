@@ -247,6 +247,34 @@
   }
   #estilos svg{width:46px;height:46px;display:block;border-radius:9px;background:#fff}
   #estilos .nom{font-size:11px;line-height:1.15;max-width:70px;text-align:center}
+
+  /* Siete estilos, y en un teléfono entran cuatro. El degradado del borde solo
+     se entiende si ya sabés que la fila desliza; quien no lo sabe lee "hay
+     cuatro estilos" y se queda con eso. Encima va una flecha que asoma, que
+     además desliza al tocarla, y que se apaga sola al llegar al final. */
+  .opsWrap{position:relative}
+  .masOps{
+    position:absolute;top:26px;right:2px;
+    width:30px;height:30px;border-radius:50%;border:0;cursor:pointer;padding:0;
+    background:var(--acento);color:#141922;font-size:20px;font-weight:800;line-height:1;
+    display:grid;place-items:center;box-shadow:0 2px 10px #000a;
+    animation:asomar 1.9s ease-in-out infinite;transition:opacity .3s;
+  }
+  .masOps.fin{opacity:0;pointer-events:none;animation:none}
+  @keyframes asomar{0%,100%{transform:translateX(0)}55%{transform:translateX(5px)}}
+  /* Ya deslizada, el degradado va también a la izquierda: así la fila se lee
+     como carrusel y no como una lista que empieza cortada. */
+  #estilos.desdeIzq{
+    -webkit-mask-image:linear-gradient(to right,transparent,#000 22px,#000 calc(100% - 26px),transparent);
+            mask-image:linear-gradient(to right,transparent,#000 22px,#000 calc(100% - 26px),transparent);
+  }
+  /* Al llegar al final no queda nada a la derecha: se quita ese degradado, o la
+     última ficha se ve desvanecida como si la fila siguiera. */
+  #estilos.finDer{-webkit-mask-image:none;mask-image:none}
+  #estilos.desdeIzq.finDer{
+    -webkit-mask-image:linear-gradient(to right,transparent,#000 22px);
+            mask-image:linear-gradient(to right,transparent,#000 22px);
+  }
   .seg{display:flex;gap:7px;margin-bottom:12px}
   .seg button{flex:1}
 
@@ -424,7 +452,10 @@
   <!-- ---------------- GENERAR ---------------- -->
   <div class="hoja on" id="hoja-gen">
     <p class="titulo">Estilo</p>
-    <div class="ops" id="estilos"></div>
+    <div class="opsWrap">
+      <div class="ops" id="estilos"></div>
+      <button class="masOps" id="masEstilos" type="button" aria-label="Ver más estilos">›</button>
+    </div>
     <div class="fila" title="Cuántas veces se repite la figura alrededor del centro">
       <label for="sSimetria">Simetría</label>
       <input type="range" id="sSimetria" min="3" max="64" step="1" value="12" autocomplete="off">
@@ -4193,6 +4224,25 @@ Object.keys(ESTILOS).forEach(id => {
   $('estilos').appendChild(b);
 });
 
+/* Estado de la flecha "hay más estilos": se apaga al llegar al final y enciende
+   el degradado izquierdo en cuanto la fila se movió. Se llama al arrancar, al
+   deslizar y al cambiar el tamaño de la ventana — y también después de dibujar
+   las miniaturas, porque hasta entonces las fichas no tienen su ancho final. */
+function flechaEstilos(){
+  const fila = $('estilos'), b = $('masEstilos');
+  if (!fila || !b) return;
+  const resto = fila.scrollWidth - fila.clientWidth - fila.scrollLeft;
+  b.classList.toggle('fin', resto < 8);
+  fila.classList.toggle('finDer', resto < 8);
+  fila.classList.toggle('desdeIzq', fila.scrollLeft > 8);
+}
+$('masEstilos').onclick = () => {
+  const fila = $('estilos');
+  fila.scrollBy({ left: Math.round(fila.clientWidth * 0.7), behavior:'smooth' });
+};
+$('estilos').addEventListener('scroll', flechaEstilos, { passive:true });
+addEventListener('resize', flechaEstilos);
+
 $('bGenerar').onclick = () => { regenerar(Math.floor(Math.random() * 1e9)); empujar(); };
 
 iSemilla.addEventListener('change', () => {
@@ -4930,7 +4980,7 @@ $('bComoSeUsa').onclick = tourAbrir;
   empujar(restaurado);
   // La galería y las miniaturas de estilo se dibujan después del primer
   // pintado: cuestan y lo que el usuario está esperando ver es su mandala.
-  setTimeout(() => { dibujarGaleria(); miniaturasDeEstilo(); }, 0);
+  setTimeout(() => { dibujarGaleria(); miniaturasDeEstilo(); flechaEstilos(); }, 0);
 
   // El recorrido, solo la primera vez de verdad: si hay algo guardado es que ya
   // estuvo aquí. Se espera un momento para que se vea aparecer el mandala
