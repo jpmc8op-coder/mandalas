@@ -82,6 +82,22 @@ enviar a revisión. Si vuelve a pasar en otra app, es ahí.
 Que **12 testers acepten** la prueba cerrada y la mantengan **14 días seguidos**.
 Recién ahí se habilita *Solicitar acceso a producción*.
 
+### Versión 2, cuando Google apruebe
+
+La flecha de "hay más estilos" (web `v21`) **no está** en el bundle que se envió
+a revisión: el APK lleva la web dentro. Se decidió no resubir ahora para no
+reiniciar la revisión, que tarda de 3 a 7 días la primera vez.
+
+En cuanto la app esté aprobada:
+
+1. Subir en `android/app/build.gradle`: `versionCode 2`, `versionName "1.1"`
+2. `npm run aab`
+3. Subir `_apk\Mandalas.aab` a **Prueba cerrada - Alpha** y enviar a revisión.
+   Las revisiones posteriores a la primera son mucho más rápidas.
+
+Conviene juntar en esa versión 2 todo lo que salga de acá a entonces, en vez de
+subir una por cada arreglo.
+
 ---
 
 # PARTE A · "Termina de configurar tu aplicación"
