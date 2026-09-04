@@ -82,6 +82,23 @@ enviar a revisión. Si vuelve a pasar en otra app, es ahí.
 Que **12 testers acepten** la prueba cerrada y la mantengan **14 días seguidos**.
 Recién ahí se habilita *Solicitar acceso a producción*.
 
+### Aprobada · 2026-09-04
+
+Google revisó y aprobó la app el mismo día del envío. Ya no aparece el nombre
+temporal `(unreviewed)` ni el estado *Borrador de aplicación*. El canal
+**Prueba cerrada - Alpha** está **Activo** con la versión `1 (1.0)` en 177
+países, y en el panel quedó marcado *Publicar una versión de prueba cerrada*.
+
+Enlaces para los testers:
+
+```
+Unirse a la prueba   https://play.google.com/apps/testing/com.jpmedina.mandalas
+Ficha en Play        https://play.google.com/store/apps/details?id=com.jpmedina.mandalas
+```
+
+El orden para cada tester: abrir el primer enlace con la cuenta de Google del
+teléfono → aceptar → recién ahí funciona el segundo.
+
 ### Versión 2, cuando Google apruebe
 
 La flecha de "hay más estilos" (web `v21`) **no está** en el bundle que se envió
